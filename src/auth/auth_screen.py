@@ -18,9 +18,10 @@ from PySide6.QtWidgets import (
     QFrame,
     QSpacerItem,
     QSizePolicy,
+    QApplication,
 )
 from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QPoint
-from PySide6.QtGui import QPixmap, QFont, QKeyEvent
+from PySide6.QtGui import QPixmap, QFont, QKeyEvent, QMouseEvent
 from loguru import logger
 
 from src.auth.auth_manager import AuthManager
@@ -47,6 +48,9 @@ class AuthScreen(QWidget):
         self._config = config
         self._auth_manager = AuthManager(config)
         self._attempts = 0
+        
+        # For dragging window
+        self._drag_position = QPoint()
 
         self._setup_window()
         self._build_ui()
@@ -73,8 +77,21 @@ class AuthScreen(QWidget):
     def _build_ui(self) -> None:
         """Build the authentication UI."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setContentsMargins(40, 20, 40, 40)
         layout.setSpacing(16)
+
+        # === Close button (top-right) ===
+        from PySide6.QtWidgets import QHBoxLayout
+        close_row = QHBoxLayout()
+        close_row.addStretch()
+        self._close_btn = QPushButton("X")
+        self._close_btn.setObjectName("authCloseBtn")
+        self._close_btn.setFixedSize(32, 32)
+        self._close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._close_btn.setToolTip("Close application")
+        self._close_btn.clicked.connect(self._close_app)
+        close_row.addWidget(self._close_btn)
+        layout.addLayout(close_row)
 
         # === Logo ===
         logo_label = QLabel()
@@ -252,3 +269,19 @@ class AuthScreen(QWidget):
             event.ignore()
         else:
             super().keyPressEvent(event)
+    
+    def _close_app(self) -> None:
+        """Close the application entirely."""
+        QApplication.quit()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Record position for window dragging."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """Move window when dragging."""
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            self.move(event.globalPosition().toPoint() - self._drag_position)
+            event.accept()

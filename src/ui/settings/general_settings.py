@@ -100,10 +100,12 @@ class GeneralSettings(QWidget):
     def _load_current(self) -> None:
         settings = self._config.settings
         self._refresh_toggle.setChecked(settings.refresh.auto_refresh_enabled, animate=False)
-        self._refresh_interval.setValue(settings.refresh.auto_refresh_interval_min)
+        # Convert seconds to minutes for display
+        interval_minutes = settings.refresh.refresh_interval_seconds // 60
+        self._refresh_interval.setValue(interval_minutes)
         self._startup_toggle.setChecked(settings.startup.start_with_windows, animate=False)
-        self._minimize_toggle.setChecked(settings.startup.start_minimized, animate=False)
-        self._purge_days.setValue(settings.undo.purge_after_days)
+        self._minimize_toggle.setChecked(settings.startup.minimize_to_tray, animate=False)
+        self._purge_days.setValue(settings.undo.purge_days)
 
     def _connect_signals(self) -> None:
         self._refresh_toggle.toggled.connect(lambda _: self.settings_changed.emit())
@@ -113,8 +115,10 @@ class GeneralSettings(QWidget):
         self._purge_days.valueChanged.connect(lambda _: self.settings_changed.emit())
 
     def save(self) -> None:
+        # Convert minutes to seconds for storage
+        interval_seconds = self._refresh_interval.value() * 60
         self._config.update("refresh", "auto_refresh_enabled", self._refresh_toggle.is_checked)
-        self._config.update("refresh", "auto_refresh_interval_min", self._refresh_interval.value())
+        self._config.update("refresh", "refresh_interval_seconds", interval_seconds)
         self._config.update("startup", "start_with_windows", self._startup_toggle.is_checked)
-        self._config.update("startup", "start_minimized", self._minimize_toggle.is_checked)
-        self._config.update("undo", "purge_after_days", self._purge_days.value())
+        self._config.update("startup", "minimize_to_tray", self._minimize_toggle.is_checked)
+        self._config.update("undo", "purge_days", self._purge_days.value())

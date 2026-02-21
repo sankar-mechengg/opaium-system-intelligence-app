@@ -31,7 +31,6 @@ from src.ui.explorer.tree_view import FolderTreeView
 from src.ui.explorer.card_grid_view import CardGridView
 from src.ui.explorer.preview_panel import PreviewPanel
 from src.ui.widgets.context_menu import ContextMenuBuilder
-from src.ui.widgets.loading_spinner import LoadingSpinner
 from src.utils.thread_pool import Worker, ThreadPoolManager
 from src.utils.time_utils import TimeGroup
 
@@ -51,8 +50,8 @@ class ExplorerPanel(QWidget):
     def __init__(self, config: ConfigManager, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._config = config
-        self._recent_parser = RecentParser()
         self._tracking_db = TrackingDB()
+        self._recent_parser = RecentParser(tracking_db=self._tracking_db)
         self._context_menu = ContextMenuBuilder()
         self._selected_item: Optional[RecentItem] = None
 
@@ -90,10 +89,6 @@ class ExplorerPanel(QWidget):
         self._card_grid = CardGridView()
         center_layout.addWidget(self._card_grid)
 
-        # Loading spinner overlay
-        self._spinner = LoadingSpinner(self, size=48)
-        self._spinner.hide()
-
         self._splitter.addWidget(center_widget)
 
         # Right: Preview panel
@@ -119,18 +114,20 @@ class ExplorerPanel(QWidget):
         # Tree view
         self._tree_view.folder_selected.connect(self._on_tree_folder_selected)
         self._tree_view.folder_double_clicked.connect(self._on_tree_folder_double_clicked)
+        self._tree_view.context_menu_requested.connect(self._on_tree_context_menu)
 
         # Context menu AI actions
         self._context_menu.ask_ai.connect(self.ask_ai_requested.emit)
+        self._context_menu.action_triggered.connect(self._on_context_action)
 
     def refresh_data(self) -> None:
         """Refresh the recent items data in a background thread."""
-        self._spinner.start()
+        self._search_bar.start_spinner()
 
         worker = Worker(self._load_data)
         worker.signals.result.connect(self._on_data_loaded)
         worker.signals.error.connect(self._on_data_error)
-        worker.signals.finished.connect(lambda: self._spinner.stop())
+        worker.signals.finished.connect(lambda: self._search_bar.stop_spinner())
         ThreadPoolManager.run(worker)
 
     def _load_data(self) -> dict:
@@ -142,19 +139,27 @@ class ExplorerPanel(QWidget):
             include_folders=True,
         )
 
-        # Filter hidden if needed
+        # Filter hidden if needed, but keep items that exist
+        # Note: Broken links that couldn't be resolved are already filtered out by parser
         if not show_hidden:
             from src.utils.path_utils import PathUtils
             for group in grouped:
                 grouped[group] = [
                     item for item in grouped[group]
-                    if not PathUtils.is_system_or_hidden(item.path)
+                    if item.exists and not PathUtils.is_system_or_hidden(item.path)
+                ]
+        else:
+            # Only show items that exist
+            for group in grouped:
+                grouped[group] = [
+                    item for item in grouped[group]
+                    if item.exists
                 ]
 
-        # Track items in DB
+        # Track items in DB for future rename detection
         for group_items in grouped.values():
             for item in group_items:
-                if item.file_id and item.volume_serial:
+                if item.file_id and item.volume_serial and item.exists:
                     self._tracking_db.upsert_item(
                         file_id=item.file_id,
                         volume_serial=item.volume_serial,
@@ -168,6 +173,10 @@ class ExplorerPanel(QWidget):
     def _on_data_loaded(self, grouped: dict) -> None:
         """Handle loaded data on the main thread."""
         self._card_grid.set_items(grouped)
+        self._card_grid.filter_items(
+            self._search_bar.search_text,
+            self._search_bar.active_filter,
+        )
 
         # Add recent folders to tree
         all_folders = []
@@ -221,6 +230,59 @@ class ExplorerPanel(QWidget):
             subprocess.Popen(["explorer", path])
         except Exception as e:
             logger.error(f"Failed to open folder: {e}")
+
+    def _on_tree_context_menu(self, path: str, pos) -> None:
+        """Handle right-click on a tree view folder."""
+        from pathlib import Path as P
+        if P(path).is_dir():
+            menu = self._context_menu.build_folder_menu(path, self)
+        else:
+            menu = self._context_menu.build_file_menu(path, self)
+        menu.exec(pos)
+
+    def _on_context_action(self, action: str, path: str) -> None:
+        """Handle context menu actions like 'properties'."""
+        if action == "properties":
+            self._show_properties(path)
+
+    def _show_properties(self, path: str) -> None:
+        """Show Windows file/folder properties dialog."""
+        try:
+            import ctypes
+            from ctypes import wintypes
+            
+            SEE_MASK_INVOKEIDLIST = 0x0000000C
+            
+            class SHELLEXECUTEINFO(ctypes.Structure):
+                _fields_ = [
+                    ("cbSize", wintypes.DWORD),
+                    ("fMask", ctypes.c_ulong),
+                    ("hwnd", wintypes.HANDLE),
+                    ("lpVerb", ctypes.c_wchar_p),
+                    ("lpFile", ctypes.c_wchar_p),
+                    ("lpParameters", ctypes.c_wchar_p),
+                    ("lpDirectory", ctypes.c_wchar_p),
+                    ("nShow", ctypes.c_int),
+                    ("hInstApp", wintypes.HINSTANCE),
+                    ("lpIDList", ctypes.c_void_p),
+                    ("lpClass", ctypes.c_wchar_p),
+                    ("hkeyClass", wintypes.HKEY),
+                    ("dwHotKey", wintypes.DWORD),
+                    ("hIcon", wintypes.HANDLE),
+                    ("hProcess", wintypes.HANDLE),
+                ]
+
+            sei = SHELLEXECUTEINFO()
+            sei.cbSize = ctypes.sizeof(SHELLEXECUTEINFO)
+            sei.fMask = SEE_MASK_INVOKEIDLIST
+            sei.lpVerb = "properties"
+            sei.lpFile = path
+            sei.nShow = 1
+            
+            ctypes.windll.shell32.ShellExecuteExW(ctypes.byref(sei))
+            logger.debug(f"Opened properties for: {path}")
+        except Exception as e:
+            logger.error(f"Failed to show properties: {e}")
 
     def get_selected_item(self) -> Optional[RecentItem]:
         return self._selected_item

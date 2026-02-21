@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional, Callable
 
-from PySide6.QtWidgets import QMenu, QWidget
+from PySide6.QtWidgets import QMenu, QWidget, QInputDialog
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtCore import Signal, QObject
 from loguru import logger
@@ -76,6 +76,13 @@ class ContextMenuBuilder(QObject):
             q = question
             p = folder_path
             action.triggered.connect(lambda checked=False, qn=q, pt=p: self.ask_ai.emit(qn, pt))
+        
+        # Add separator before custom question
+        ai_menu.addSeparator()
+        
+        # Custom Question option
+        custom_action = ai_menu.addAction("Custom Question...")
+        custom_action.triggered.connect(lambda: self._ask_custom_question(folder_path))
 
         menu.addSeparator()
 
@@ -131,6 +138,13 @@ class ContextMenuBuilder(QObject):
             q = question
             p = file_path
             action.triggered.connect(lambda checked=False, qn=q, pt=p: self.ask_ai.emit(qn, pt))
+        
+        # Add separator before custom question
+        ai_menu.addSeparator()
+        
+        # Custom Question option
+        custom_action = ai_menu.addAction("Custom Question...")
+        custom_action.triggered.connect(lambda: self._ask_custom_question(file_path))
 
         menu.addSeparator()
 
@@ -185,3 +199,24 @@ class ContextMenuBuilder(QObject):
                 clipboard.setText(text)
         except Exception as e:
             logger.error(f"Failed to copy to clipboard: {e}")
+    
+    def _ask_custom_question(self, item_path: str) -> None:
+        """Open a dialog for user to enter a custom AI question."""
+        from PySide6.QtWidgets import QApplication
+        
+        item_name = Path(item_path).name
+        is_folder = Path(item_path).is_dir()
+        item_type = "folder" if is_folder else "file"
+        
+        # Get the dialog with proper styling
+        text, ok = QInputDialog.getText(
+            None,
+            "Ask AI Custom Question",
+            f"Enter your question about {item_type} '{item_name}':",
+            text=f"",  # Empty default text
+        )
+        
+        if ok and text.strip():
+            # Emit the custom question
+            self.ask_ai.emit(text.strip(), item_path)
+            logger.debug(f"Custom AI question asked: {text.strip()} for {item_path}")

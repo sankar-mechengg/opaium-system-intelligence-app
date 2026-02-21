@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QStackedWidget,
     QApplication,
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTimer
 from PySide6.QtGui import QIcon
 from loguru import logger
 
@@ -30,6 +30,7 @@ from src.ui.chat.chat_panel import ChatPanel
 from src.ui.history.history_panel import HistoryPanel
 from src.ui.settings.settings_dialog import SettingsDialog
 from src.ui.notifications.toast import NotificationManager, NotificationType
+from src.ui.widgets.resize_grip import ResizeGrip
 
 
 class MainWindow(QMainWindow):
@@ -51,15 +52,20 @@ class MainWindow(QMainWindow):
         self._build_ui()
         self._connect_signals()
 
+        QTimer.singleShot(0, self._update_resize_grips)
+
         logger.info("Main window initialized.")
 
     def _setup_window(self) -> None:
         """Configure window properties."""
         self.setWindowTitle(AppConstants.APP_NAME)
-        self.setMinimumSize(1000, 650)
+        self.setMinimumSize(
+            getattr(AppConstants, "MIN_WINDOW_WIDTH", 900),
+            getattr(AppConstants, "MIN_WINDOW_HEIGHT", 600),
+        )
         self.resize(1280, 800)
 
-        # Frameless
+        # Frameless with resize support
         self.setWindowFlags(
             Qt.WindowType.Window
             | Qt.WindowType.FramelessWindowHint
@@ -93,7 +99,7 @@ class MainWindow(QMainWindow):
         self._stack.addWidget(self._explorer)
 
         # Chat panel (index 1)
-        self._chat = ChatPanel(self._config, self._undo_manager)
+        self._chat = ChatPanel(self._config, self._undo_manager, self._operation_journal)
         self._stack.addWidget(self._chat)
 
         # History panel (index 2)
@@ -102,6 +108,9 @@ class MainWindow(QMainWindow):
 
         self._stack.setCurrentIndex(0)
         main_layout.addWidget(self._stack, stretch=1)
+
+        # Resize grips at edges/corners for frameless window
+        self._resize_grips = self._create_resize_grips(central)
 
         # Notification manager (overlay)
         self._notifications = NotificationManager(central)
@@ -189,7 +198,11 @@ class MainWindow(QMainWindow):
 
     def _on_undo_requested(self, operation_id: int) -> None:
         """Handle undo from chat."""
-        success = self._undo_manager.undo(operation_id)
+        operation = self._operation_journal.get_operation(operation_id)
+        if operation is None:
+            self._notifications.error("Operation not found.")
+            return
+        success, _ = self._undo_manager.undo_operation(operation)
         if success:
             self._notifications.info("Operation undone.")
             self._explorer.refresh_data()
@@ -213,13 +226,18 @@ class MainWindow(QMainWindow):
         if self._is_maximized:
             self.showNormal()
             self._is_maximized = False
+            self._update_resize_grips()
+            for g in self._resize_grips:
+                g.show()
         else:
             self.showMaximized()
             self._is_maximized = True
+            for g in self._resize_grips:
+                g.hide()
 
     def _on_close(self) -> None:
         """Close or minimize to tray."""
-        if self._config.settings.startup.close_to_tray:
+        if self._config.settings.startup.minimize_to_tray:
             self.hide()
         else:
             self.close()
@@ -237,6 +255,42 @@ class MainWindow(QMainWindow):
     def refresh_all(self) -> None:
         """Refresh all data (called by auto-refresh timer)."""
         self._explorer.refresh_data()
+
+    def _create_resize_grips(self, parent: QWidget) -> list[ResizeGrip]:
+        """Create resize grips at window edges and corners."""
+        b = 6
+        grips = []
+        for edge in ["left", "right", "top", "bottom", "tl", "tr", "bl", "br"]:
+            g = ResizeGrip(edge, parent)
+            g.set_minimum_size(self.minimumWidth(), self.minimumHeight())
+            grips.append(g)
+        return grips
+
+    def _update_resize_grips(self) -> None:
+        """Position resize grips at edges of central widget."""
+        cw = self.centralWidget()
+        if not cw or not hasattr(self, "_resize_grips"):
+            return
+        b = 6
+        w, h = cw.width(), cw.height()
+        geos = [
+            (0, b, b, h - 2 * b),
+            (w - b, b, b, h - 2 * b),
+            (b, 0, w - 2 * b, b),
+            (b, h - b, w - 2 * b, b),
+            (0, 0, b, b),
+            (w - b, 0, b, b),
+            (0, h - b, b, b),
+            (w - b, h - b, b, b),
+        ]
+        for grip, (x, y, gw, gh) in zip(self._resize_grips, geos):
+            grip.setGeometry(x, y, max(1, gw), max(1, gh))
+            grip.raise_()
+
+    def resizeEvent(self, event) -> None:
+        """Update resize grip positions."""
+        super().resizeEvent(event)
+        self._update_resize_grips()
 
     def closeEvent(self, event) -> None:
         """Handle window close."""

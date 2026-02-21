@@ -23,8 +23,8 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QMessageBox,
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap, QFont
+from PySide6.QtCore import Qt, Signal, QPoint
+from PySide6.QtGui import QPixmap, QFont, QMouseEvent
 from loguru import logger
 
 from src.auth.auth_manager import AuthManager
@@ -49,6 +49,9 @@ class FirstRunSetup(QWidget):
         self._config = config
         self._auth_manager = AuthManager(config)
         self._current_step = 0
+        
+        # For dragging window
+        self._drag_position = QPoint()
 
         self._setup_window()
         self._build_ui()
@@ -360,3 +363,15 @@ class FirstRunSetup(QWidget):
         else:
             self._api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
             self._show_key_btn.setText("Show Key")
+    
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Record position for window dragging."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """Move window when dragging."""
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            self.move(event.globalPosition().toPoint() - self._drag_position)
+            event.accept()

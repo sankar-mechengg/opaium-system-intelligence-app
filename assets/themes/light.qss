@@ -128,7 +128,7 @@ QWidget:disabled {
 /* === Tree View === */
 #treeHeader {
     background-color: #FFFFFF;
-    border-bottom: 1px solid #E9ECEF;
+    border: none;
     color: #2C3E50;
 }
 
@@ -161,17 +161,15 @@ QWidget:disabled {
 /* === Folder Card === */
 #folderCard {
     background-color: #FFFFFF;
-    border: 1.5px solid #E9ECEF;
+    border: none;
     border-radius: 10px;
 }
 
 #folderCard:hover {
-    border-color: #90CAF9;
     background-color: #FAFCFF;
 }
 
 #folderCard[selected="true"] {
-    border-color: #4FC3F7;
     background-color: #E3F2FD;
 }
 
@@ -190,17 +188,15 @@ QWidget:disabled {
 /* === File Card === */
 #fileCard {
     background-color: #FFFFFF;
-    border: 1.5px solid #E9ECEF;
+    border: none;
     border-radius: 10px;
 }
 
 #fileCard:hover {
-    border-color: #A5D6A7;
     background-color: #FAFFF9;
 }
 
 #fileCard[selected="true"] {
-    border-color: #66BB6A;
     background-color: #E8F5E9;
 }
 
@@ -218,12 +214,13 @@ QWidget:disabled {
 
 /* === Collapsible Section === */
 #collapsibleHeader {
-    background-color: #F1F3F5;
+    background-color: transparent;
+    border: none;
     border-radius: 6px;
 }
 
 #collapsibleHeader:hover {
-    background-color: #E9ECEF;
+    background-color: #F1F3F5;
 }
 
 #collapsibleTitle {
@@ -295,40 +292,89 @@ QWidget:disabled {
 }
 
 #bubble_user {
-    background-color: #4FC3F7;
+    background-color: rgba(79, 195, 247, 0.12);
+    border: 1px solid rgba(79, 195, 247, 0.3);
     border-radius: 14px 14px 4px 14px;
+    padding: 4px;
+    min-width: 80px;
 }
 
 #bubbleContent_user {
-    color: #FFFFFF;
+    color: #1565C0;
+    background: transparent;
 }
 
 #bubble_assistant {
     background-color: #FFFFFF;
     border: 1px solid #E9ECEF;
     border-radius: 14px 14px 14px 4px;
+    padding: 4px;
+    min-width: 80px;
 }
 
 #bubbleContent_assistant {
     color: #333333;
+    background: transparent;
 }
 
 #bubble_system {
-    background-color: #FFF8E1;
-    border: 1px solid #FFE082;
+    background-color: rgba(255, 224, 130, 0.15);
+    border: 1px solid rgba(255, 224, 130, 0.4);
     border-radius: 10px;
+    padding: 4px;
 }
 
 #bubbleContent_system {
     color: #795548;
+    background: transparent;
 }
 
 #bubbleRole {
     color: #4FC3F7;
+    background: transparent;
 }
 
-#bubbleTime {
+#bubbleTime_assistant, #bubbleTime_system {
     color: #ADB5BD;
+    background: transparent;
+}
+
+#bubbleTime_user {
+    color: rgba(79, 195, 247, 0.6);
+    background: transparent;
+}
+
+/* === Chat Context Card === */
+#chatContextCard {
+    background: transparent;
+}
+
+#contextCardInner {
+    background-color: rgba(79, 195, 247, 0.06);
+    border: 1px solid rgba(79, 195, 247, 0.2);
+    border-radius: 8px;
+    padding: 2px;
+}
+
+#contextCardName {
+    color: #333333;
+    background: transparent;
+}
+
+#contextCardPath {
+    color: #9E9E9E;
+    background: transparent;
+}
+
+#contextCardType {
+    color: #1565C0;
+    background-color: rgba(79, 195, 247, 0.1);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+#contextCardIcon {
+    background: transparent;
 }
 
 /* === Chat Input === */
@@ -615,19 +661,20 @@ QWidget:disabled {
 
 /* === Scrollbars === */
 QScrollBar:vertical {
-    background: transparent;
-    width: 8px;
+    background: #F1F3F5;
+    width: 12px;
     margin: 0;
+    border-radius: 6px;
 }
 
 QScrollBar::handle:vertical {
-    background: #CED4DA;
-    border-radius: 4px;
-    min-height: 30px;
+    background: #ADB5BD;
+    border-radius: 6px;
+    min-height: 40px;
 }
 
 QScrollBar::handle:vertical:hover {
-    background: #ADB5BD;
+    background: #1976D2;
 }
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
@@ -635,14 +682,19 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
 }
 
 QScrollBar:horizontal {
-    background: transparent;
-    height: 8px;
+    background: #F1F3F5;
+    height: 12px;
+    border-radius: 6px;
 }
 
 QScrollBar::handle:horizontal {
-    background: #CED4DA;
-    border-radius: 4px;
-    min-width: 30px;
+    background: #ADB5BD;
+    border-radius: 6px;
+    min-width: 40px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #1976D2;
 }
 
 /* === Tooltips === */
@@ -701,4 +753,18 @@ QSpinBox:focus {
     background-color: #FFFFFF;
     color: #1976D2;
     font-weight: bold;
+}
+
+/* === Auth Close Button === */
+#authCloseBtn {
+    background-color: rgba(0, 0, 0, 0.08);
+    color: #495057;
+    border: none;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: bold;
+}
+#authCloseBtn:hover {
+    background-color: #E53935;
+    color: #FFFFFF;
 }

@@ -88,7 +88,9 @@ class AppearanceSettings(QWidget):
     def _load_current(self) -> None:
         """Load current settings into UI."""
         settings = self._config.settings.appearance
-        self._theme_combo.setCurrentText(settings.theme.capitalize())
+        # Get theme value (handle both enum and string)
+        theme_value = settings.theme.value if hasattr(settings.theme, 'value') else str(settings.theme)
+        self._theme_combo.setCurrentText(theme_value.capitalize())
         self._card_width.setValue(settings.card_width)
         self._card_height.setValue(settings.card_height)
         self._hidden_toggle.setChecked(settings.show_hidden_folders, animate=False)
@@ -108,7 +110,11 @@ class AppearanceSettings(QWidget):
 
     def save(self) -> None:
         """Save current UI values to config."""
-        self._config.update("appearance", "theme", self._theme_combo.currentText().lower())
+        from src.config.defaults import ThemeMode
+        # Convert string to enum
+        theme_str = self._theme_combo.currentText().lower()
+        theme_enum = ThemeMode.LIGHT if theme_str == "light" else ThemeMode.DARK
+        self._config.update("appearance", "theme", theme_enum)
         self._config.update("appearance", "card_width", self._card_width.value())
         self._config.update("appearance", "card_height", self._card_height.value())
         self._config.update("appearance", "show_hidden_folders", self._hidden_toggle.is_checked)

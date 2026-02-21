@@ -29,6 +29,9 @@ class OperationType(str, Enum):
     FLATTEN = "flatten"
     CREATE_FOLDER = "create_folder"
     EXTENSION_CHANGE = "extension_change"
+    CREATE_FILE = "create_file"
+    WRITE_FILE = "write_file"
+    APPEND_FILE = "append_file"
 
 
 class FileMapping(BaseModel):
@@ -85,6 +88,9 @@ class Operation(BaseModel):
             OperationType.FLATTEN: "Flatten Folder",
             OperationType.CREATE_FOLDER: "Create Folder",
             OperationType.EXTENSION_CHANGE: "Extension Change",
+            OperationType.CREATE_FILE: "Create File",
+            OperationType.WRITE_FILE: "Write File",
+            OperationType.APPEND_FILE: "Append File",
         }
         return labels.get(self.operation_type, self.operation_type.value)
 
@@ -108,4 +114,6 @@ class Operation(BaseModel):
             return "Remove created folder(s)"
         elif t == OperationType.EXTENSION_CHANGE:
             return f"Restore original extensions for {n} file(s)"
+        elif t in (OperationType.CREATE_FILE, OperationType.WRITE_FILE, OperationType.APPEND_FILE):
+            return f"Revert file change: {self.description}"
         return f"Undo: {self.description}"

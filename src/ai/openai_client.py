@@ -143,7 +143,14 @@ class OpenAIClient:
                 logger.info(f"Tool call [{round_num + 1}]: {func_name}")
                 try:
                     result = tool_executor.execute_tool(func_name, func_args)
-                    result_str = json.dumps(result) if not isinstance(result, str) else result
+                    # Convert ToolResult to dict if needed
+                    if hasattr(result, 'to_dict'):
+                        result_dict = result.to_dict()
+                        result_str = json.dumps(result_dict)
+                    elif isinstance(result, str):
+                        result_str = result
+                    else:
+                        result_str = json.dumps(result)
                 except Exception as e:
                     result_str = json.dumps({"error": str(e)})
                     logger.error(f"Tool error: {func_name} -> {e}")

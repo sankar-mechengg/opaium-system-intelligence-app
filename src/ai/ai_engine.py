@@ -21,6 +21,7 @@ from loguru import logger
 
 from src.ai.openai_client import OpenAIClient
 from src.ai.function_registry import FunctionRegistry
+from src.ai.tool_executor import ToolExecutorWithJournal
 from src.ai.conversation_manager import ConversationManager, ChatMessage
 from src.ai.prompt_builder import PromptBuilder
 from src.ai.response_parser import ResponseParser, ParsedResponse
@@ -170,11 +171,12 @@ class AIEngine(QObject):
         """Execute the AI request (runs in thread pool)."""
         messages = self._conversation.get_api_messages()
         tools = self._registry.get_all_schemas()
+        tool_executor = ToolExecutorWithJournal(self._registry, self._journal)
 
         return self._client.chat_with_tool_loop(
             messages=messages,
             tools=tools,
-            tool_executor=self._registry,
+            tool_executor=tool_executor,
             max_rounds=5,
         )
 

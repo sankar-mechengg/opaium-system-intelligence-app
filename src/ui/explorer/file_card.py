@@ -49,7 +49,7 @@ class FileCard(QFrame):
         self.setObjectName("fileCard")
         self.setFixedSize(card_width, card_height)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFrameShape(QFrame.Shape.StyledPanel)
+        self.setFrameShape(QFrame.Shape.NoFrame)
         self.setProperty("selected", False)
 
         self._build_ui()

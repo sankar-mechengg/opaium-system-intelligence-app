@@ -122,11 +122,13 @@ class AISettings(QWidget):
             self._key_status.setStyleSheet("color: #FF9800;")
 
         # Model
-        idx = self._model_combo.findText(settings.model)
+        idx = self._model_combo.findText(settings.ai_model)
         if idx >= 0:
             self._model_combo.setCurrentIndex(idx)
 
-        idx = self._speech_model.findText(settings.speech_model)
+        # Transcription model (handle enum)
+        transcription_value = settings.transcription_model.value if hasattr(settings.transcription_model, 'value') else str(settings.transcription_model)
+        idx = self._speech_model.findText(transcription_value)
         if idx >= 0:
             self._speech_model.setCurrentIndex(idx)
 
@@ -155,5 +157,12 @@ class AISettings(QWidget):
             self._key_status.setStyleSheet("color: #FF9800;")
 
     def save(self) -> None:
-        self._config.update("ai", "model", self._model_combo.currentText())
-        self._config.update("ai", "speech_model", self._speech_model.currentText())
+        from src.config.defaults import TranscriptionModel
+        self._config.update("ai", "ai_model", self._model_combo.currentText())
+        # Convert string to enum
+        speech_text = self._speech_model.currentText()
+        if speech_text == "gpt-4o-transcribe":
+            transcription_enum = TranscriptionModel.GPT_4O_TRANSCRIBE
+        else:
+            transcription_enum = TranscriptionModel.WHISPER_1
+        self._config.update("ai", "transcription_model", transcription_enum)

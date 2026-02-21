@@ -190,6 +190,30 @@ class TrackingDB:
             )
             return [self._row_to_record(row) for row in cursor.fetchall()]
 
+    def get_all_tracked(self, active_only: bool = True) -> list[TrackingRecord]:
+        """
+        Get all tracked items from the database.
+        
+        Args:
+            active_only: If True, only return active items (default).
+            
+        Returns:
+            List of TrackingRecord objects.
+        """
+        with self._cursor() as cursor:
+            if active_only:
+                cursor.execute(
+                    """SELECT * FROM tracked_items
+                       WHERE is_active = 1
+                       ORDER BY last_seen DESC"""
+                )
+            else:
+                cursor.execute(
+                    """SELECT * FROM tracked_items
+                       ORDER BY last_seen DESC"""
+                )
+            return [self._row_to_record(row) for row in cursor.fetchall()]
+
     def mark_inactive(self, file_id: int, volume_serial: int) -> None:
         """Mark an item as inactive (deleted/inaccessible)."""
         with self._cursor() as cursor:

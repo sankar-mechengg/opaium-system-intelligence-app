@@ -49,6 +49,14 @@ class ToolResult:
         status = "OK" if self.success else "FAIL"
         return f"ToolResult({status}: {self.message})"
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "success": self.success,
+            "message": self.message,
+            "data": self.data,
+        }
+
 
 class BaseTool(ABC):
     """

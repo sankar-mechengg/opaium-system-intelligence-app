@@ -61,9 +61,16 @@ python -m venv .venv
 # Install dependencies
 pip install -r requirements.txt
 
-# Run
+# Run in development mode
 python scripts/run_dev.py
+
+# OR: Run with auto-restart (recommended for development!)
+pip install watchdog
+python scripts/run_dev_watch.py
 ```
+
+> 💡 **Development Tip**: Use `run_dev_watch.py` for automatic restart on file changes!  
+> See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed development workflow.
 
 ### Requirements
 - **Python 3.11+**

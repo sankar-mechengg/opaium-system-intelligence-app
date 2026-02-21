@@ -41,6 +41,9 @@ class HistoryRow(QFrame):
         "organize_date": "📅",
         "flatten": "📂",
         "clean_empty": "🧹",
+        "create_file": "📄",
+        "write_file": "✍️",
+        "append_file": "➕",
     }
 
     def __init__(

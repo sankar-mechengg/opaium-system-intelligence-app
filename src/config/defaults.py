@@ -47,6 +47,8 @@ class AppearanceConfig(BaseModel):
     window_x: Optional[int] = None
     window_y: Optional[int] = None
     show_hidden_folders: bool = False
+    card_width: int = AppConstants.CARD_WIDTH
+    card_height: int = AppConstants.CARD_HEIGHT
     card_size_multiplier: float = 1.0
 
 

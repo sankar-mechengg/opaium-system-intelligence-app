@@ -110,7 +110,6 @@ class HistoryPanel(QWidget):
 
     def refresh(self) -> None:
         """Reload operations from the undo journal."""
-        # Clear existing rows
         for row in self._rows:
             row.deleteLater()
         self._rows.clear()
@@ -125,24 +124,45 @@ class HistoryPanel(QWidget):
         self._empty_label.setVisible(False)
         self._count_label.setText(f"{len(operations)} operation{'s' if len(operations) != 1 else ''}")
 
-        for op_id, operation in operations:
-            row = HistoryRow(operation, op_id)
+        for operation in operations:
+            record = self._operation_to_record(operation)
+            row = HistoryRow(record, operation.id or 0)
             row.undo_clicked.connect(self.undo_requested.emit)
             self._rows.append(row)
-            # Insert before the stretch
             self._container_layout.insertWidget(
                 self._container_layout.count() - 1, row
             )
 
+    @staticmethod
+    def _operation_to_record(op) -> "OperationRecord":
+        """Convert an undo Operation to an OperationRecord for display."""
+        from src.core.models import OperationRecord
+        return OperationRecord(
+            id=op.id,
+            timestamp=op.timestamp,
+            operation_type=op.operation_type.value if hasattr(op.operation_type, 'value') else str(op.operation_type),
+            description=op.description,
+            source_paths=[m.source for m in op.file_mappings],
+            dest_paths=[m.destination for m in op.file_mappings],
+            original_names=[m.original_name for m in op.file_mappings],
+            new_names=[m.new_name for m in op.file_mappings],
+            is_undone=op.is_undone,
+            is_undoable=op.is_undoable,
+        )
+
     def _on_undo_requested(self, operation_id: int) -> None:
         """Handle undo request."""
-        success = self._undo_manager.undo(operation_id)
+        operation = self._undo_manager._journal.get_operation(operation_id)
+        if operation is None:
+            logger.warning(f"Operation {operation_id} not found.")
+            return
+        success, message = self._undo_manager.undo_operation(operation)
         if success:
-            logger.info(f"Operation {operation_id} undone successfully.")
+            logger.info(f"Operation {operation_id} undone: {message}")
             self.operation_undone.emit()
             self.refresh()
         else:
-            logger.warning(f"Failed to undo operation {operation_id}.")
+            logger.warning(f"Failed to undo operation {operation_id}: {message}")
 
     def add_operation(self, operation_id: int) -> None:
         """Refresh to show a newly added operation."""

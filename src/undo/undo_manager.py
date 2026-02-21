@@ -36,6 +36,18 @@ class UndoManager:
     def __init__(self, journal: OperationJournal) -> None:
         self._journal = journal
 
+    def get_recent_operations(self, limit: int = 50) -> list[Operation]:
+        """
+        Get recent operations from the journal.
+        
+        Args:
+            limit: Maximum number of operations to return.
+            
+        Returns:
+            List of recent operations.
+        """
+        return self._journal.get_recent(limit=limit)
+
     def can_undo(self) -> bool:
         """Check if there are any undoable operations."""
         undoable = self._journal.get_undoable()
@@ -97,6 +109,10 @@ class UndoManager:
                 success, message = self._undo_create_folder(operation)
             elif op_type == OperationType.EXTENSION_CHANGE:
                 success, message = self._undo_extension_change(operation)
+            elif op_type == OperationType.CREATE_FILE:
+                success, message = self._undo_create_file(operation)
+            elif op_type in (OperationType.WRITE_FILE, OperationType.APPEND_FILE):
+                return False, "Undo not supported for write/append (content not stored)."
             else:
                 return False, f"Undo not implemented for: {op_type.value}"
 
@@ -310,6 +326,19 @@ class UndoManager:
     def _undo_extension_change(self, op: Operation) -> tuple[bool, str]:
         """Undo extension change: restore original extensions."""
         return self._undo_rename(op)
+
+    def _undo_create_file(self, op: Operation) -> tuple[bool, str]:
+        """Undo file creation: delete the created file."""
+        removed = 0
+        for mapping in op.file_mappings:
+            path = mapping.destination or mapping.source
+            if path and os.path.isfile(path):
+                try:
+                    os.remove(path)
+                    removed += 1
+                except OSError as e:
+                    logger.error(f"Failed to remove file: {e}")
+        return removed > 0, f"Removed {removed} created file(s)."
 
     def get_undo_history(self, limit: int = 50) -> list[Operation]:
         """Get recent operations for the history panel."""

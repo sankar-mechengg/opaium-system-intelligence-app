@@ -66,9 +66,26 @@ def main() -> int:
     app.setOrganizationName(AppConstants.APP_ORG)
     app.setApplicationVersion(AppConstants.APP_VERSION)
 
-    # Set application icon
-    if AppConstants.LOGO_PATH.exists():
-        app.setWindowIcon(QIcon(str(AppConstants.LOGO_PATH)))
+    # Set application icon (for window and taskbar)
+    icon = None
+    # Try .ico first (better for Windows taskbar)
+    if AppConstants.LOGO_ICO_PATH.exists():
+        icon = QIcon(str(AppConstants.LOGO_ICO_PATH))
+    elif AppConstants.LOGO_PATH.exists():
+        icon = QIcon(str(AppConstants.LOGO_PATH))
+    
+    if icon:
+        app.setWindowIcon(icon)
+        
+    # Set Windows taskbar icon explicitly
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            # Set app user model ID for Windows taskbar
+            myappid = f"{AppConstants.APP_ORG}.{AppConstants.APP_NAME}.{AppConstants.APP_VERSION}"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception as e:
+            logger.debug(f"Could not set Windows App ID: {e}")
 
     # Prevent multiple instances
     from PySide6.QtNetwork import QLocalServer, QLocalSocket

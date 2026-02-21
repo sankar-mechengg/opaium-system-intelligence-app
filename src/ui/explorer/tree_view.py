@@ -37,6 +37,7 @@ class FolderTreeView(QWidget):
 
     folder_selected = Signal(str)
     folder_double_clicked = Signal(str)
+    context_menu_requested = Signal(str, object)  # (path, global_pos)
 
     ROLE_PATH = Qt.ItemDataRole.UserRole + 1
     ROLE_LOADED = Qt.ItemDataRole.UserRole + 2
@@ -81,6 +82,8 @@ class FolderTreeView(QWidget):
         self._tree.clicked.connect(self._on_clicked)
         self._tree.doubleClicked.connect(self._on_double_clicked)
         self._tree.expanded.connect(self._on_expanded)
+        self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tree.customContextMenuRequested.connect(self._on_context_menu)
 
         layout.addWidget(self._tree)
 
@@ -124,7 +127,9 @@ class FolderTreeView(QWidget):
         for letter in string.ascii_uppercase:
             drive_path = f"{letter}:\\"
             if os.path.exists(drive_path):
-                drive_item = self._create_folder_item(f"{letter}: Drive", drive_path)
+                label = self._get_volume_label(drive_path)
+                display_name = f"{letter}: {label}" if label else f"{letter}: Drive"
+                drive_item = self._create_folder_item(display_name, drive_path)
                 drives_item.appendRow(drive_item)
 
         # Expand Quick Access by default
@@ -198,6 +203,19 @@ class FolderTreeView(QWidget):
             if path:
                 self.folder_double_clicked.emit(path)
 
+    def _on_context_menu(self, pos) -> None:
+        """Handle right-click on tree item."""
+        index = self._tree.indexAt(pos)
+        if not index.isValid():
+            return
+        item = self._model.itemFromIndex(index)
+        if item is None:
+            return
+        path = item.data(self.ROLE_PATH)
+        if path:
+            global_pos = self._tree.viewport().mapToGlobal(pos)
+            self.context_menu_requested.emit(path, global_pos)
+
     def add_recent_folders(self, folder_paths: list[str]) -> None:
         """Add recently accessed folders to the Quick Access section."""
         quick_access = self._model.item(0)  # First item is Quick Access
@@ -238,6 +256,29 @@ class FolderTreeView(QWidget):
                 if result:
                     return result
         return None
+
+    @staticmethod
+    def _get_volume_label(drive_path: str) -> str:
+        """Get Windows volume label for a drive (e.g. 'Code Drive 3')."""
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            volume_name = ctypes.create_unicode_buffer(wintypes.MAX_PATH + 1)
+            ctypes.windll.kernel32.GetVolumeInformationW(
+                ctypes.c_wchar_p(drive_path),
+                volume_name,
+                ctypes.sizeof(volume_name),
+                None,
+                None,
+                None,
+                None,
+                0,
+            )
+            label = volume_name.value.strip()
+            return label if label else ""
+        except Exception:
+            return ""
 
     @staticmethod
     def _bold_font() -> QFont:

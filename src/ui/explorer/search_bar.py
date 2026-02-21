@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QFont, QIcon
 
+from src.ui.widgets.loading_spinner import LoadingSpinner
+
 
 class SearchBar(QWidget):
     """
@@ -39,6 +41,11 @@ class SearchBar(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 6, 8, 6)
         layout.setSpacing(8)
+
+        # Loading spinner (shown during refresh, left of search)
+        self._spinner = LoadingSpinner(self, size=24, line_width=2)
+        self._spinner.hide()
+        layout.addWidget(self._spinner)
 
         # Search input
         self._search_input = QLineEdit()
@@ -111,3 +118,11 @@ class SearchBar(QWidget):
 
     def set_focus(self) -> None:
         self._search_input.setFocus()
+
+    def start_spinner(self) -> None:
+        """Show and start the loading spinner."""
+        self._spinner.start()
+
+    def stop_spinner(self) -> None:
+        """Stop and hide the loading spinner."""
+        self._spinner.stop()

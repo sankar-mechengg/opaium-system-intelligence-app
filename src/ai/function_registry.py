@@ -143,6 +143,8 @@ class FunctionRegistry:
         from src.ai.tools.recycle_bin_tool import RecycleBinTool
         from src.ai.tools.startup_tool import StartupTool
         from src.ai.tools.disk_usage_tool import DiskUsageTool
+        from src.ai.tools.folder_operations import FolderOperationsTool
+        from src.ai.tools.file_content import FileContentTool
 
         # Instantiate and register all tools
         tool_classes = [
@@ -152,7 +154,7 @@ class FunctionRegistry:
             FileMoverTool, FileCopierTool, SmartOrganizerTool,
             DateOrganizerTool, FolderFlattenerTool, RegexRenamerTool,
             ExtensionChangerTool, MetadataReaderTool, RecycleBinTool,
-            StartupTool, DiskUsageTool,
+            StartupTool, DiskUsageTool, FolderOperationsTool, FileContentTool,
         ]
 
         for tool_cls in tool_classes:
