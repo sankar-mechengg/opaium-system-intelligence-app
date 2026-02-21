@@ -1,0 +1,194 @@
+# OP(AI)UM System Intelligence Tool - Git Ignore File
+
+# === Python ===
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.virtualenv/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# === IDE & Editors ===
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Cursor
+.cursor/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# === Operating System ===
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+
+# === Application Specific ===
+# User data and configuration (stored in AppData)
+# Note: These are typically not in the project directory, but just in case:
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.enc
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# Build artifacts
+*.pyc
+*.pyo
+*.exe
+*.msi
+*.msix
+
+# === Environment & Secrets ===
+# Environment variables (IMPORTANT: Contains sensitive data)
+.env
+.env.local
+.env.*.local
+
+# API keys and secrets
+secrets.json
+credentials.json
+*_secret.*
+*_private.*
+
+# === Qt/PySide ===
+# Qt Creator
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+*.moc.cpp
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qmlc
+*.jsc
+Makefile*
+*build-*
+
+# === cx_Freeze ===
+build/
+dist/
+*.zip
+
+# === Project Specific ===
+# Installer outputs
+installer/output/
+installer/*.exe
+installer/*.msi
+
+# Test outputs
+test_output/
+test_results/
+
+# Documentation builds
+docs/_build/
+docs/.doctrees/
+
+# === Optional: Uncomment if needed ===
+# Lock files (if you want reproducible builds, keep these tracked)
+# Pipfile.lock
+# poetry.lock
+
+# === Keep These Files ===
+!.gitkeep
+!.gitignore
