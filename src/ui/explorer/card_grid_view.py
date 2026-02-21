@@ -48,12 +48,17 @@ class FlowLayout(QWidget):
             self.setFixedHeight(0)
             return
 
+        visible = [w for w in self._widgets if w.isVisible()]
+        if not visible:
+            self.setFixedHeight(0)
+            return
+
         x = 0
         y = 0
         row_height = 0
         available_width = max(self.parentWidget().width() - 20 if self.parentWidget() else 800, 400)
 
-        for widget in self._widgets:
+        for widget in visible:
             w = widget.width()
             h = widget.height()
 
@@ -63,7 +68,6 @@ class FlowLayout(QWidget):
                 row_height = 0
 
             widget.move(x, y)
-            widget.show()
 
             x += w + self._spacing
             row_height = max(row_height, h)
@@ -182,8 +186,10 @@ class CardGridView(QWidget):
 
             card.setVisible(visible)
 
-        # Relayout all flow widgets
-        for _, flow in self._sections.values():
+        # Relayout all flow widgets and hide sections with no visible cards
+        for section, flow in self._sections.values():
+            has_visible = any(w.isVisible() for w in flow._widgets)
+            section.setVisible(has_visible)
             flow._relayout()
 
     def _matches_type_filter(self, item: RecentItem, type_filter: str) -> bool:
