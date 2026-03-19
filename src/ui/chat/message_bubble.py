@@ -2,7 +2,7 @@
 OP(AI)UM — Chat Message Bubble
 
 Individual message widget for the chat view.
-Supports user messages, AI responses, and system messages.
+Supports user messages, AI responses (with markdown), and system messages.
 """
 
 from __future__ import annotations
@@ -12,9 +12,9 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QSizePolicy,
+    QSizePolicy, QTextBrowser,
 )
-from PySide6.QtCore import Qt, QSize, QRectF
+from PySide6.QtCore import Qt, QSize, QRectF, QTimer
 from PySide6.QtGui import QFont, QPainter, QPixmap, QColor, QBrush, QPen
 
 
@@ -69,7 +69,6 @@ class RoundAvatar(QWidget):
         rect = QRectF(1, 1, self.SIZE - 2, self.SIZE - 2)
 
         if self._role == MessageRole.ASSISTANT:
-            # AI: Opaium logo
             from src.config.constants import AppConstants
             logo_path = AppConstants.LOGO_PATH
             if logo_path and Path(logo_path).exists():
@@ -80,7 +79,6 @@ class RoundAvatar(QWidget):
                         Qt.AspectRatioMode.KeepAspectRatio,
                         Qt.TransformationMode.SmoothTransformation,
                     )
-                    # Clip to circle
                     from PySide6.QtGui import QRegion
                     from PySide6.QtCore import QRect
                     painter.setClipRegion(QRegion(rect.toRect(), QRegion.RegionType.Ellipse))
@@ -89,7 +87,6 @@ class RoundAvatar(QWidget):
                     painter.end()
                     return
 
-            # Fallback: colored circle with "AI"
             painter.setBrush(QBrush(QColor("#89DCEB")))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawEllipse(rect)
@@ -100,7 +97,6 @@ class RoundAvatar(QWidget):
             painter.setFont(font)
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, "AI")
         else:
-            # User: blue circle with person indicator
             painter.setBrush(QBrush(QColor("#89B4FA")))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawEllipse(rect)
@@ -114,12 +110,66 @@ class RoundAvatar(QWidget):
         painter.end()
 
 
+class MarkdownBrowser(QTextBrowser):
+    """QTextBrowser that renders markdown as HTML and auto-sizes to content."""
+
+    def __init__(self, html_content: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("markdownBrowser")
+        self.setOpenExternalLinks(True)
+        self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.setStyleSheet(
+            "QTextBrowser { background: transparent; border: none; }"
+        )
+
+        self.setHtml(html_content)
+        self.document().setDocumentMargin(4)
+        self.document().contentsChanged.connect(self._on_document_changed)
+        QTimer.singleShot(0, self._sync_layout)
+        QTimer.singleShot(50, self._sync_layout)
+
+    def _on_document_changed(self) -> None:
+        self._sync_layout()
+
+    def _sync_layout(self) -> None:
+        """QTextDocument needs an explicit width to wrap paragraphs and size correctly."""
+        w = self.viewport().width()
+        if w < 80:
+            if self.parent():
+                pw = self.parent().width()
+                if pw > 80:
+                    w = max(80, pw - 80)
+            if w < 80:
+                w = 400
+        self.document().setTextWidth(w)
+        self._adjust_height()
+
+    def _adjust_height(self) -> None:
+        doc_height = int(self.document().size().height()) + 8
+        doc_height = max(doc_height, 24)
+        self.setMinimumHeight(doc_height)
+        self.setMaximumHeight(doc_height)
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        QTimer.singleShot(0, self._sync_layout)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._sync_layout()
+
+
 class MessageBubble(QFrame):
     """
     Visual chat message bubble.
 
     User messages align right, AI messages align left.
     System messages are centered and styled differently.
+    AI messages render markdown with syntax highlighting.
     """
 
     def __init__(self, message: ChatMessage, parent: QWidget | None = None) -> None:
@@ -135,15 +185,14 @@ class MessageBubble(QFrame):
 
         is_user = self._message.role == MessageRole.USER
         is_system = self._message.role == MessageRole.SYSTEM
+        is_assistant = self._message.role == MessageRole.ASSISTANT
 
         if is_user:
             outer_layout.addStretch(1)
         elif not is_system:
-            # AI avatar on the left
             avatar = RoundAvatar(MessageRole.ASSISTANT, self)
             outer_layout.addWidget(avatar, alignment=Qt.AlignmentFlag.AlignTop)
 
-        # Bubble container — use StyledBubbleFrame so QSS background renders
         bubble = StyledBubbleFrame()
         bubble.setObjectName(f"bubble_{self._message.role}")
         bubble.setMaximumWidth(680)
@@ -154,7 +203,6 @@ class MessageBubble(QFrame):
         bubble_layout.setContentsMargins(14, 10, 14, 8)
         bubble_layout.setSpacing(4)
 
-        # Role label for AI
         if not is_user and not is_system:
             role_label = QLabel("OP(AI)UM")
             role_label.setObjectName("bubbleRole")
@@ -164,19 +212,29 @@ class MessageBubble(QFrame):
             role_label.setFont(role_font)
             bubble_layout.addWidget(role_label)
 
-        # Content
-        content_label = QLabel(self._message.content)
-        content_label.setObjectName(f"bubbleContent_{self._message.role}")
-        content_label.setWordWrap(True)
-        content_label.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
-        content_label.setMinimumWidth(60)
-        content_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        content_font = QFont()
-        content_font.setPointSize(10)
-        content_label.setFont(content_font)
-        bubble_layout.addWidget(content_label)
+        # Render content: markdown for assistant, plain text for others
+        if is_assistant:
+            from src.utils.markdown_renderer import markdown_to_html
+            html_content = markdown_to_html(self._message.content)
+            content_widget = MarkdownBrowser(html_content)
+            content_widget.setObjectName(f"bubbleContent_{self._message.role}")
+            content_font = QFont()
+            content_font.setPointSize(10)
+            content_widget.setFont(content_font)
+            bubble_layout.addWidget(content_widget)
+        else:
+            content_label = QLabel(self._message.content)
+            content_label.setObjectName(f"bubbleContent_{self._message.role}")
+            content_label.setWordWrap(True)
+            content_label.setTextInteractionFlags(
+                Qt.TextInteractionFlag.TextSelectableByMouse
+            )
+            content_label.setMinimumWidth(60)
+            content_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            content_font = QFont()
+            content_font.setPointSize(10)
+            content_label.setFont(content_font)
+            bubble_layout.addWidget(content_label)
 
         # Timestamp
         time_str = self._message.timestamp.strftime("%H:%M")
@@ -189,13 +247,12 @@ class MessageBubble(QFrame):
             time_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         bubble_layout.addWidget(time_label)
 
-        outer_layout.addWidget(bubble, 1)  # Stretch factor so bubble expands to fill space
+        outer_layout.addWidget(bubble, 1)
 
         if is_user:
-            # User avatar on the right
             avatar = RoundAvatar(MessageRole.USER, self)
             outer_layout.addWidget(avatar, alignment=Qt.AlignmentFlag.AlignTop)
-            outer_layout.addSpacing(8)  # Small right margin so bubble isn't flush to edge
+            outer_layout.addSpacing(8)
         elif not is_system:
             outer_layout.addStretch(1)
 

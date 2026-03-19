@@ -91,6 +91,7 @@ class AISettings(QWidget):
 
         self._model_combo = QComboBox()
         self._model_combo.addItems([
+            "gpt-5.2-2025-12-11",
             "gpt-4.1",
             "gpt-4.1-mini",
             "gpt-4.1-nano",

@@ -20,7 +20,7 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayName=OP(AI)UM
-; SetupIconFile=..\assets\icons\opaium.ico
+; SetupIconFile=..\assets\icons\opaium_logo_nobg.ico
 ; LicenseFile=..\LICENSE
 
 [Languages]

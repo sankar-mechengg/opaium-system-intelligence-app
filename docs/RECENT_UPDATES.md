@@ -18,7 +18,7 @@ The refresh button rescans the Windows Recent folder and displays any newly acce
 
 **Solution:**
 1. Created `scripts/convert_icon.py` to convert the PNG logo to ICO format
-2. Generated `assets/icons/opaium_logo.ico` with multiple sizes (16x16, 32x32, 48x48, 256x256)
+2. Generated `assets/icons/opaium_logo_nobg.ico` with multiple sizes (16x16, 32x32, 48x48, 256x256)
 3. Updated `src/main.py` to:
    - Prefer `.ico` file over `.png` for Windows compatibility
    - Set Windows App User Model ID for taskbar icon separation
@@ -27,7 +27,7 @@ The refresh button rescans the Windows Recent folder and displays any newly acce
 **Files Changed:**
 - `src/main.py` - Enhanced icon loading logic and added Windows-specific taskbar handling
 - `scripts/convert_icon.py` - New utility script to convert PNG to ICO
-- `assets/icons/opaium_logo.ico` - New multi-resolution icon file
+- `assets/icons/opaium_logo_nobg.ico` - New multi-resolution icon file
 
 **Result:** The taskbar will now show the Opaium logo instead of the generic Python icon.
 

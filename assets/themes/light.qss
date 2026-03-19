@@ -377,6 +377,81 @@ QWidget:disabled {
     background: transparent;
 }
 
+/* === Conversations Sidebar === */
+#convSidebar {
+    background-color: #FFFFFF;
+    border-right: 1px solid #E9ECEF;
+}
+
+#convSidebarHeader {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E9ECEF;
+}
+
+#convSidebarTitle {
+    color: #2C3E50;
+}
+
+#convNewBtn {
+    background-color: #E3F2FD;
+    border: none;
+    border-radius: 14px;
+    color: #1976D2;
+}
+
+#convNewBtn:hover {
+    background-color: #BBDEFB;
+}
+
+#convSidebarScroll {
+    background-color: #FFFFFF;
+}
+
+#convItem {
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 2px;
+}
+
+#convItem:hover {
+    background-color: #F1F3F5;
+}
+
+#convItem[selected="true"] {
+    background-color: #E3F2FD;
+}
+
+#convItemTitle {
+    color: #2C3E50;
+    background: transparent;
+}
+
+#convItemFolder {
+    color: #868E96;
+    background: transparent;
+}
+
+#convItemTime {
+    color: #ADB5BD;
+    background: transparent;
+}
+
+#convEmptyLabel {
+    color: #CED4DA;
+}
+
+#convSeparator {
+    color: #E9ECEF;
+}
+
+/* === Markdown Browser === */
+#markdownBrowser {
+    background: transparent;
+    border: none;
+    color: #333333;
+}
+
 /* === Chat Input === */
 #chatInput {
     background-color: #FFFFFF;
@@ -600,6 +675,10 @@ QWidget:disabled {
 
 #authSubtitle {
     color: #ADB5BD;
+}
+
+#setupFullName {
+    color: #868E96;
 }
 
 #authSeparator {

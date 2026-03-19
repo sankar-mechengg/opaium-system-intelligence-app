@@ -43,8 +43,8 @@ class AppConstants:
     SOUNDS_DIR = ASSETS_DIR / "sounds"
 
     # Logo and icons
-    LOGO_PATH = ICONS_DIR / "opaium_logo.png"
-    LOGO_ICO_PATH = ICONS_DIR / "opaium_logo.ico"
+    LOGO_PATH = ICONS_DIR / "opaium_logo_nobg.png"
+    LOGO_ICO_PATH = ICONS_DIR / "opaium_logo_nobg.ico"
     TRAY_ICON_PATH = ICONS_DIR / "tray_icon.png"
 
     # Windows Recent folder
@@ -65,7 +65,7 @@ class AppConstants:
     UNDO_PURGE_CHECK_INTERVAL = 3600  # Check every hour
 
     # === AI Configuration ===
-    DEFAULT_AI_MODEL = "gpt-5-2"
+    DEFAULT_AI_MODEL = "gpt-5.2-2025-12-11"
     DEFAULT_TRANSCRIPTION_MODEL = "gpt-4o-transcribe"
     AVAILABLE_TRANSCRIPTION_MODELS = ["gpt-4o-transcribe", "whisper-1"]
     MAX_CONVERSATION_HISTORY = 50  # Messages per session

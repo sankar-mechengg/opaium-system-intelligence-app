@@ -59,7 +59,7 @@ class OpenAIClient:
             "model": self.model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
+            "max_completion_tokens": max_tokens,
         }
         if tools:
             kwargs["tools"] = tools
@@ -162,6 +162,21 @@ class OpenAIClient:
                 })
 
         logger.warning(f"Max tool rounds ({max_rounds}) reached.")
+        # Make one final call without tools to get a text summary
+        try:
+            current_messages.append({
+                "role": "user",
+                "content": "Please summarize what you've done so far and provide your response.",
+            })
+            response = self.chat_completion(current_messages, tools=None)
+        except Exception as e:
+            logger.error(f"Final summary call failed: {e}")
+            if not response.get("message", {}).get("content"):
+                response = {
+                    "message": {"content": "I completed several operations but reached the processing limit. Please check the results.", "tool_calls": None},
+                    "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                    "finish_reason": "length",
+                }
         return response
 
     def transcribe_audio(self, audio_file_path: str, language: str = "en") -> str:

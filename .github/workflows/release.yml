@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Build with PyInstaller
+        run: python scripts/build.py
+
+      - name: Create ZIP archive
+        run: Compress-Archive -Path dist/OPAIUM/* -DestinationPath dist/OPAIUM-${{ github.ref_name }}-windows.zip
+
+      - name: Extract release notes
+        id: notes
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Release $TAG" > release_notes.txt
+          echo "" >> release_notes.txt
+          echo "## Changes" >> release_notes.txt
+          git log --oneline --no-decorate $(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD >> release_notes.txt 2>/dev/null || echo "Initial release" >> release_notes.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "OP(AI)UM ${{ github.ref_name }}"
+          body_path: release_notes.txt
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+          files: |
+            dist/OPAIUM-${{ github.ref_name }}-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,9 +1,11 @@
 """
 OP(AI)UM — Chat Panel
 
-Main AI chat interface combining message list, input bar,
-quick actions, and typing indicator. Orchestrates communication
-with the AI engine and handles tool approvals.
+Main AI chat interface combining:
+- Conversations sidebar (left)
+- Message list with markdown rendering (center)
+- Input bar, quick actions, typing indicator (bottom)
+- Auto-save conversation history to SQLite
 """
 
 from __future__ import annotations
@@ -12,8 +14,8 @@ from pathlib import Path
 from typing import Optional
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QScrollArea, QFrame, QLabel, QDialog,
-    QSizePolicy,
+    QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame, QLabel,
+    QSizePolicy, QSplitter,
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QFont
@@ -21,6 +23,7 @@ from loguru import logger
 
 from src.ai.ai_engine import AIEngine
 from src.ai.conversation_manager import ConversationManager
+from src.ai.conversation_db import ConversationDB
 from src.ai.speech_recorder import SpeechRecorder
 from src.ai.speech_transcriber import SpeechTranscriber
 from src.config.config_manager import ConfigManager
@@ -31,6 +34,7 @@ from src.ui.chat.quick_actions import QuickActionChips
 from src.ui.chat.tool_result_widget import ToolResultWidget
 from src.ui.chat.approval_dialog import ApprovalDialog
 from src.ui.chat.context_card import ChatContextCard
+from src.ui.chat.conversations_sidebar import ConversationsSidebar
 from src.undo.undo_manager import UndoManager
 from src.undo.operation_journal import OperationJournal
 from src.utils.thread_pool import Worker, ThreadPoolManager
@@ -38,7 +42,7 @@ from src.utils.thread_pool import Worker, ThreadPoolManager
 
 class ChatPanel(QWidget):
     """
-    Main AI chat interface.
+    Main AI chat interface with conversation sidebar.
 
     Signals:
         operation_completed(): An AI operation finished (refresh explorer).
@@ -60,18 +64,37 @@ class ChatPanel(QWidget):
         self._undo_manager = undo_manager
         self._operation_journal = operation_journal
         self._conversation = ConversationManager()
+        self._conversation_db = ConversationDB()
         self._ai_engine: Optional[AIEngine] = None
         self._speech_recorder: Optional[SpeechRecorder] = None
         self._speech_transcriber: Optional[SpeechTranscriber] = None
         self._pending_context: str = ""
         self._current_folder: str = ""
+        self._current_conversation_id: Optional[int] = None
 
         self._build_ui()
         self._connect_signals()
         self._initialize_ai()
+        self._sidebar.refresh()
 
     def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
+        outer_layout = QHBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        # Conversations sidebar (left)
+        self._sidebar = ConversationsSidebar(self._conversation_db)
+        outer_layout.addWidget(self._sidebar)
+
+        # Separator line
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.VLine)
+        sep.setObjectName("convSeparator")
+        outer_layout.addWidget(sep)
+
+        # Chat area (right)
+        chat_widget = QWidget()
+        layout = QVBoxLayout(chat_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -85,26 +108,23 @@ class ChatPanel(QWidget):
         header.setFixedHeight(36)
         layout.addWidget(header)
 
-        # Message scroll area — sized to content to avoid empty space below messages
+        # Message scroll area — widgetResizable for proper sizing
         scroll = QScrollArea()
         scroll.setObjectName("chatScroll")
-        scroll.setWidgetResizable(False)
+        scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setMinimumHeight(80)
         self._scroll = scroll
 
         self._message_container = QWidget()
-        self._message_container.setMinimumWidth(400)
         self._message_layout = QVBoxLayout(self._message_container)
         self._message_layout.setContentsMargins(16, 8, 16, 8)
         self._message_layout.setSpacing(4)
-        self._message_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self._message_layout.addStretch()
 
         scroll.setWidget(self._message_container)
-        layout.addWidget(scroll)
-        layout.addStretch(1)  # Takes extra space so scroll stays content-sized, input at bottom
+        layout.addWidget(scroll, stretch=1)
 
         # Typing indicator
         self._typing = TypingIndicator()
@@ -118,6 +138,8 @@ class ChatPanel(QWidget):
         self._input_bar = ChatInputBar()
         layout.addWidget(self._input_bar)
 
+        outer_layout.addWidget(chat_widget, stretch=1)
+
         # Welcome message
         self._add_system_message(
             "Welcome to OP(AI)UM! I can help you manage your files. "
@@ -128,6 +150,8 @@ class ChatPanel(QWidget):
         self._input_bar.message_sent.connect(self._on_user_message)
         self._input_bar.mic_toggled.connect(self._on_mic_toggled)
         self._quick_actions.chip_clicked.connect(self._on_user_message)
+        self._sidebar.conversation_selected.connect(self._on_conversation_selected)
+        self._sidebar.new_chat_requested.connect(lambda: self._start_new_chat())
 
     def _initialize_ai(self) -> None:
         """Initialize the AI engine if API key is available."""
@@ -157,9 +181,26 @@ class ChatPanel(QWidget):
                 "No API key configured. Please add your OpenAI API key in Settings to enable AI features."
             )
 
+    # === Message Handling ===
+
     def _on_user_message(self, text: str) -> None:
         """Handle user sending a message."""
+        # Auto-create conversation if none active
+        if self._current_conversation_id is None:
+            title = text.strip()
+            if title.startswith("[Working in:"):
+                lines = title.split("\n", 1)
+                title = lines[1] if len(lines) > 1 else lines[0]
+            title = title.strip()[:60] or "New Conversation"
+            self._current_conversation_id = self._conversation_db.create_conversation(
+                title=title,
+                folder_path=self._current_folder,
+            )
+            self._sidebar.refresh()
+            self._sidebar.set_current_conversation(self._current_conversation_id)
+
         self._add_message(MessageRole.USER, text)
+        self._save_message("user", text)
 
         if self._ai_engine:
             self._ai_engine.send_message(text)
@@ -175,9 +216,17 @@ class ChatPanel(QWidget):
         self._input_bar.set_enabled(True)
 
     def _on_ai_response(self, parsed_response) -> None:
-        if parsed_response.text:
-            self._add_message(MessageRole.ASSISTANT, parsed_response.text)
-        self._scroll_to_bottom()
+        """Handle AI response - skip if it's an error (handled by _on_ai_error)."""
+        try:
+            if parsed_response.is_error:
+                return
+
+            if parsed_response.text:
+                self._add_message(MessageRole.ASSISTANT, parsed_response.text)
+                self._save_message("assistant", parsed_response.text)
+            self._scroll_to_bottom()
+        except Exception as e:
+            logger.error(f"Error in _on_ai_response handler: {e}")
 
     def _on_tool_executing(self, tool_name: str) -> None:
         self._add_system_message(f"Executing: {tool_name}...")
@@ -188,10 +237,31 @@ class ChatPanel(QWidget):
         self._add_system_message(message)
 
     def _on_ai_error(self, error: str) -> None:
-        self._typing.stop()
-        self._input_bar.set_enabled(True)
-        logger.error(f"AI error: {error}")
-        self._add_system_message(f"Error: {error}")
+        """Handle AI errors without clearing the chat."""
+        try:
+            self._typing.stop()
+            self._input_bar.set_enabled(True)
+            logger.error(f"AI error: {error}")
+
+            if "context_length_exceeded" in error or "tokens" in error.lower():
+                friendly_error = (
+                    "The conversation is too long for the AI to process. "
+                    "Please start a new chat or ask a simpler question."
+                )
+            elif "api_key" in error.lower() or "authentication" in error.lower():
+                friendly_error = "API key is invalid or expired. Please update it in Settings."
+            elif "rate_limit" in error.lower():
+                friendly_error = "Rate limit reached. Please wait a moment and try again."
+            elif "timeout" in error.lower():
+                friendly_error = "Request timed out. The operation may be too complex."
+            else:
+                friendly_error = f"Error: {error}"
+
+            self._add_system_message(friendly_error)
+        except Exception as e:
+            logger.error(f"Error in _on_ai_error handler: {e}")
+
+    # === Speech ===
 
     def _on_mic_toggled(self, active: bool) -> None:
         if active:
@@ -235,13 +305,21 @@ class ChatPanel(QWidget):
         if text.strip():
             self._input_bar.set_text(text)
 
+    # === UI Helpers ===
+
     def _add_message(self, role: str, content: str) -> None:
         """Add a chat message bubble."""
-        msg = ChatMessage(role=role, content=content)
-        bubble = MessageBubble(msg)
-        self._message_layout.addWidget(bubble)
-        self._update_scroll_content_size()
-        self._scroll_to_bottom()
+        try:
+            if not content:
+                return
+            msg = ChatMessage(role=role, content=content)
+            bubble = MessageBubble(msg)
+            # Insert before the stretch at the end
+            count = self._message_layout.count()
+            self._message_layout.insertWidget(count - 1, bubble)
+            self._scroll_to_bottom()
+        except Exception as e:
+            logger.error(f"Error adding message to chat: {e}")
 
     def _add_system_message(self, content: str) -> None:
         self._add_message(MessageRole.SYSTEM, content)
@@ -249,24 +327,8 @@ class ChatPanel(QWidget):
     def _add_context_card(self, path: str) -> None:
         """Add a compact context card showing the file/folder being asked about."""
         card = ChatContextCard(path)
-        self._message_layout.addWidget(card)
-        self._update_scroll_content_size()
-
-    def _update_scroll_content_size(self) -> None:
-        """Size the message container and scroll area to fit content (removes empty space below messages)."""
-        def _do_update():
-            h = self._message_layout.sizeHint().height()
-            h = max(h, 1)
-            self._message_container.setFixedHeight(h)
-            vp = self._scroll.viewport()
-            if vp and vp.width() > 0:
-                self._message_container.setMinimumWidth(vp.width())
-                self._message_container.setMaximumWidth(vp.width())
-            avail = max(self.height() - 180, 200)
-            scroll_h = min(h, avail)
-            self._scroll.setMinimumHeight(scroll_h)
-            self._scroll.setMaximumHeight(scroll_h)
-        QTimer.singleShot(0, _do_update)
+        count = self._message_layout.count()
+        self._message_layout.insertWidget(count - 1, card)
 
     def _scroll_to_bottom(self) -> None:
         """Scroll chat to the bottom after layout updates."""
@@ -275,22 +337,71 @@ class ChatPanel(QWidget):
         ))
 
     def _clear_chat(self) -> None:
-        """Clear all messages from the chat."""
-        while self._message_layout.count() > 0:
+        """Clear all messages from the chat UI."""
+        while self._message_layout.count() > 1:  # Keep the stretch
             item = self._message_layout.takeAt(0)
             widget = item.widget()
             if widget:
                 widget.deleteLater()
-        self._update_scroll_content_size()
+
+    # === Conversation Management ===
+
+    def _save_message(self, role: str, content: str) -> None:
+        """Persist a message to the conversation database."""
+        if self._current_conversation_id is not None:
+            try:
+                self._conversation_db.add_message(self._current_conversation_id, role, content)
+            except Exception as e:
+                logger.error(f"Failed to save message: {e}")
+
+    def _on_conversation_selected(self, conv_id: int) -> None:
+        """Load a conversation from the database."""
+        self._clear_chat()
+        self._current_conversation_id = conv_id
+        self._sidebar.set_current_conversation(conv_id)
+
+        # Reset AI conversation memory
+        if self._ai_engine:
+            self._ai_engine._conversation.clear()
+            self._ai_engine._update_system_prompt()
+
+        # Load messages from DB
+        messages = self._conversation_db.get_messages(conv_id)
+        for msg in messages:
+            if msg.role in ("user", "assistant"):
+                self._add_message(
+                    MessageRole.USER if msg.role == "user" else MessageRole.ASSISTANT,
+                    msg.content,
+                )
+                # Re-populate AI conversation memory for context
+                if self._ai_engine:
+                    if msg.role == "user":
+                        self._ai_engine._conversation.add_user_message(msg.content)
+                    else:
+                        self._ai_engine._conversation.add_assistant_message(msg.content)
+
+        # Restore folder context
+        conversations = self._conversation_db.get_conversations()
+        for conv in conversations:
+            if conv.id == conv_id and conv.folder_path:
+                self._current_folder = conv.folder_path
+                self._quick_actions.set_current_folder(conv.folder_path)
+                if self._ai_engine:
+                    self._ai_engine.set_selected_folder(conv.folder_path)
+                break
+
+        self._scroll_to_bottom()
 
     def _start_new_chat(self, context_msg: str | None = None) -> None:
         """Start a fresh chat conversation."""
         self._clear_chat()
+        self._current_conversation_id = None
 
-        # Reset conversation in AI engine
         if self._ai_engine:
             self._ai_engine._conversation.clear()
             self._ai_engine._update_system_prompt()
+
+        self._sidebar.set_current_conversation(None)
 
         if context_msg:
             self._add_system_message(context_msg)
@@ -313,9 +424,14 @@ class ChatPanel(QWidget):
         if self._ai_engine:
             self._ai_engine.set_selected_folder(folder_path)
 
+        # Update current conversation's folder
+        if self._current_conversation_id is not None:
+            self._conversation_db.update_conversation(
+                self._current_conversation_id, folder_path=folder_path
+            )
+
     def inject_ai_question(self, question: str, path: str) -> None:
         """Inject a question from the context menu with context card."""
-        # If different folder/file, start new chat
         if path != self._current_folder and self._current_folder:
             self._start_new_chat()
 
@@ -325,16 +441,8 @@ class ChatPanel(QWidget):
         if self._ai_engine:
             self._ai_engine.set_selected_folder(path)
 
-        # Show the context card above the user message
         self._add_context_card(path)
-
-        # Send the question
         self._on_user_message(question)
 
     def focus_input(self) -> None:
         self._input_bar.focus_input()
-
-    def resizeEvent(self, event) -> None:
-        """Update scroll area size when panel is resized."""
-        super().resizeEvent(event)
-        self._update_scroll_content_size()

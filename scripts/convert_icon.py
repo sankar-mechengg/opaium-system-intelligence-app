@@ -8,8 +8,8 @@ from PIL import Image
 
 # Paths
 ROOT = Path(__file__).parent.parent
-PNG_PATH = ROOT / "assets" / "icons" / "opaium_logo.png"
-ICO_PATH = ROOT / "assets" / "icons" / "opaium_logo.ico"
+PNG_PATH = ROOT / "assets" / "icons" / "opaium_logo_nobg.png"
+ICO_PATH = ROOT / "assets" / "icons" / "opaium_logo_nobg.ico"
 
 def convert_png_to_ico():
     """Convert PNG to ICO with multiple sizes."""

@@ -14,6 +14,7 @@ This is the single entry point the UI chat widget talks to.
 
 from __future__ import annotations
 
+import json
 from typing import Any, Optional
 
 from PySide6.QtCore import QObject, Signal
@@ -185,11 +186,24 @@ class AIEngine(QObject):
         response = dict(raw_response) if isinstance(raw_response, dict) else {"message": {"content": str(raw_response), "tool_calls": None}}
         parsed = ResponseParser.parse(response)
 
-        # Add assistant message to conversation
+        # Add assistant message to conversation (format tool_calls for OpenAI API)
         content = parsed.text or ""
+        formatted_tool_calls = None
+        if parsed.tool_calls:
+            formatted_tool_calls = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.name,
+                        "arguments": json.dumps(tc.arguments) if isinstance(tc.arguments, dict) else tc.arguments,
+                    },
+                }
+                for tc in parsed.tool_calls
+            ]
         self._conversation.add_assistant_message(
             content=content,
-            tool_calls=[tc._asdict() for tc in parsed.tool_calls] if parsed.tool_calls else None,
+            tool_calls=formatted_tool_calls,
         )
 
         # Check if approval is needed

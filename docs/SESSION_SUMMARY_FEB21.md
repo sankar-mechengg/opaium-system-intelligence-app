@@ -13,7 +13,7 @@
 
 **Changes**:
 - Created `scripts/convert_icon.py` to convert PNG to ICO format
-- Generated `assets/icons/opaium_logo.ico` (16x16, 32x32, 48x48, 256x256)
+- Generated `assets/icons/opaium_logo_nobg.ico` (16x16, 32x32, 48x48, 256x256)
 - Updated `src/main.py`:
   - Prefer `.ico` over `.png` for Windows taskbar
   - Added Windows App User Model ID via `ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID()`
@@ -116,7 +116,7 @@
 
 ## Files Created (Total: 5)
 
-1. `assets/icons/opaium_logo.ico` - Windows icon
+1. `assets/icons/opaium_logo_nobg.ico` - Windows icon
 2. `src/ai/tools/folder_operations.py` - NEW tool
 3. `src/ai/tools/file_content.py` - NEW tool
 4. `docs/AI_CAPABILITIES.md` - Documentation

@@ -100,6 +100,15 @@ class FirstRunSetup(QWidget):
         welcome_label.setObjectName("setupWelcome")
         main_layout.addWidget(welcome_label)
 
+        full_name_label = QLabel(AppConstants.APP_FULL_NAME)
+        full_name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        full_name_label.setWordWrap(True)
+        fn_font = QFont()
+        fn_font.setPointSize(9)
+        full_name_label.setFont(fn_font)
+        full_name_label.setObjectName("setupFullName")
+        main_layout.addWidget(full_name_label)
+
         desc_label = QLabel("Let's set up your security and AI features.")
         desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         desc_label.setObjectName("setupDescription")

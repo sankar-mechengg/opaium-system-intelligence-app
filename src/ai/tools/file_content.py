@@ -57,8 +57,8 @@ class FileContentTool(BaseTool):
                 },
                 "max_size_kb": {
                     "type": "integer",
-                    "description": "For read: maximum file size to read in KB (default: 1024 = 1MB)",
-                    "default": 1024,
+                    "description": "For read: maximum content size in KB (default: 256KB to stay within model context limits)",
+                    "default": 256,
                 },
             },
             "required": ["operation", "path"],
@@ -167,7 +167,7 @@ class FileContentTool(BaseTool):
         path = kwargs.get("path", "")
         content = kwargs.get("content", "")
         encoding = kwargs.get("encoding", "utf-8")
-        max_size_kb = kwargs.get("max_size_kb", 1024)
+        max_size_kb = kwargs.get("max_size_kb", 256)
         
         path_obj = Path(path)
         
@@ -200,7 +200,7 @@ class FileContentTool(BaseTool):
         if not path.is_file():
             return ToolResult(success=False, message=f"Path is not a file: {path}")
 
-        max_chars = min(max_size_kb * 1024, 500_000)
+        max_chars = min(max_size_kb * 1024, 200_000)
 
         try:
             from src.utils.file_readers import read_file_content, can_read_format
@@ -220,15 +220,21 @@ class FileContentTool(BaseTool):
 
             lines = content.count("\n")
             chars = len(content)
+            truncated = len(content) >= max_chars
+
+            truncation_note = ""
+            if truncated:
+                truncation_note = f" [TRUNCATED to {max_chars} chars to fit context window]"
 
             return ToolResult(
                 success=True,
-                message=f"Read file: {path.name} ({lines} lines, {chars} characters)",
+                message=f"Read file: {path.name} ({lines} lines, {chars} characters){truncation_note}",
                 data={
                     "content": content,
                     "lines": lines,
                     "characters": chars,
                     "encoding": encoding,
+                    "truncated": truncated,
                 },
             )
         except Exception as e:

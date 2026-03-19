@@ -80,6 +80,11 @@ class ConfigManager:
             json_str = self._crypto.decrypt(encrypted_data)
             data = json.loads(json_str)
             self._settings = DefaultConfig.model_validate(data)
+            # Migrate old model IDs to current default
+            if self._settings.ai.ai_model in ("gpt-5-2", "gpt-5.2"):
+                logger.info("Migrating AI model to %s", AppConstants.DEFAULT_AI_MODEL)
+                self._settings.ai.ai_model = AppConstants.DEFAULT_AI_MODEL
+                self.save()
             logger.info("Configuration loaded successfully.")
         except ValueError:
             logger.warning("Config decryption failed. Resetting to defaults.")

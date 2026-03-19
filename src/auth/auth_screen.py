@@ -59,7 +59,7 @@ class AuthScreen(QWidget):
     def _setup_window(self) -> None:
         """Configure window properties."""
         self.setWindowTitle(f"{AppConstants.APP_NAME} — Locked")
-        self.setFixedSize(480, 620)
+        self.setFixedSize(480, 660)
         self.setWindowFlags(
             Qt.WindowType.Window
             | Qt.WindowType.WindowStaysOnTopHint
@@ -71,7 +71,7 @@ class AuthScreen(QWidget):
         from PySide6.QtWidgets import QApplication
         screen = QApplication.primaryScreen().geometry()
         x = (screen.width() - 480) // 2
-        y = (screen.height() - 620) // 2
+        y = (screen.height() - 660) // 2
         self.move(x, y)
 
     def _build_ui(self) -> None:
@@ -117,14 +117,15 @@ class AuthScreen(QWidget):
         name_label.setObjectName("authAppName")
         layout.addWidget(name_label)
 
-        # === Subtitle ===
-        subtitle = QLabel("System Intelligence Tool")
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle_font = QFont()
-        subtitle_font.setPointSize(10)
-        subtitle.setFont(subtitle_font)
-        subtitle.setObjectName("authSubtitle")
-        layout.addWidget(subtitle)
+        # === Full name (expansion of OP(AI)UM) ===
+        full_name = QLabel(AppConstants.APP_FULL_NAME)
+        full_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        full_name.setWordWrap(True)
+        full_name_font = QFont()
+        full_name_font.setPointSize(9)
+        full_name.setFont(full_name_font)
+        full_name.setObjectName("authSubtitle")
+        layout.addWidget(full_name)
 
         layout.addSpacerItem(QSpacerItem(0, 30, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
 

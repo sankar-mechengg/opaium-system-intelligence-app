@@ -15,7 +15,7 @@ SRC = ROOT / "src"
 ASSETS = ROOT / "assets"
 DIST = ROOT / "dist"
 BUILD = ROOT / "build"
-ICON = ASSETS / "icons" / "opaium.ico"
+ICON = ASSETS / "icons" / "opaium_logo_nobg.ico"
 
 ENTRY = SRC / "main.py"
 APP_NAME = "OPAIUM"
