@@ -175,6 +175,9 @@ dist/
 installer/output/
 installer/*.exe
 installer/*.msi
+# WiX generated (keep Product.wxs in repo)
+installer/wix/Harvest.wxs
+installer/wix/obj/
 
 # Test outputs
 test_output/

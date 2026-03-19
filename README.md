@@ -44,8 +44,16 @@ OP(AI)UM is a Windows desktop application that combines an elegant file explorer
 
 ## 📦 Installation
 
-### From Installer
-Download `OPAIUM_Setup_1.0.0.exe` from the Releases page and run it.
+### From GitHub Releases (tagged versions)
+Pushing a tag like `v1.0.0` publishes:
+
+| Asset | Use |
+|--------|-----|
+| **`OPAIUM-v*-windows.msi`** | Windows Installer (Program Files, Start Menu, uninstall in Settings) |
+| **`OPAIUM-v*-windows.zip`** | Portable: extract anywhere and run `OPAIUM.exe` |
+
+### Optional: Inno Setup EXE (local build)
+You can build `OPAIUM_Setup_*.exe` locally with Inno Setup — see `installer/README.md`.
 
 ### From Source
 

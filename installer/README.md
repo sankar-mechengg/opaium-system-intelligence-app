@@ -1,6 +1,32 @@
 # OP(AI)UM Installer
 
-## Building the Installer
+## MSI (WiX) — used for GitHub Releases
+
+Tagged releases (`v*`) build an **MSI** in CI and attach it next to the ZIP.
+
+### Local build (Windows)
+
+1. Build the app: `python scripts/build.py`
+2. Run (PowerShell):
+
+   ```powershell
+   Set-ExecutionPolicy -Scope Process Bypass -Force
+   ./installer/wix/build_msi.ps1 -TagName "v1.0.0" -RepoRoot (Get-Location)
+   ```
+
+3. Output: `dist/OPAIUM-v1.0.0-windows.msi`
+
+The script downloads [WiX Toolset 3.11](https://github.com/wixtoolset/wix3/releases) binaries into `%TEMP%` if `candle.exe` is not already there.
+
+### What the MSI does
+
+- Per-machine install under **Program Files** (`OPAIUM\`)
+- **Start Menu** shortcut (all users)
+- Major upgrade support (same `UpgradeCode`)
+
+---
+
+## EXE installer (Inno Setup) — optional
 
 ### Prerequisites
 1. Build the app first: `python scripts/build.py`

@@ -36,6 +36,23 @@ jobs:
       - name: Create ZIP archive
         run: Compress-Archive -Path dist/OPAIUM/* -DestinationPath dist/OPAIUM-${{ github.ref_name }}-windows.zip
 
+      - name: Build MSI (WiX)
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          ./installer/wix/build_msi.ps1 -TagName "${{ github.ref_name }}" -RepoRoot "${{ github.workspace }}"
+
+      - name: Verify release assets exist
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $zip = Join-Path $env:GITHUB_WORKSPACE "dist/OPAIUM-$tag-windows.zip"
+          $msi = Join-Path $env:GITHUB_WORKSPACE "dist/OPAIUM-$tag-windows.msi"
+          if (-not (Test-Path -LiteralPath $zip)) { throw "Missing $zip" }
+          if (-not (Test-Path -LiteralPath $msi)) { throw "Missing $msi" }
+          Write-Host "ZIP: $((Get-Item $zip).Length / 1MB) MB"
+          Write-Host "MSI: $((Get-Item $msi).Length / 1MB) MB"
+
       - name: Extract release notes
         id: notes
         shell: bash
@@ -57,5 +74,6 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           files: |
             dist/OPAIUM-${{ github.ref_name }}-windows.zip
+            dist/OPAIUM-${{ github.ref_name }}-windows.msi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
