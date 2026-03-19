@@ -23,10 +23,10 @@ def reload_theme():
     try:
         # Touch the file to trigger reload
         reload_file.write_text("reload")
-        print("✅ Theme reload signal sent!")
+        print("[OK] Theme reload signal sent!")
         print("   (If the app supports hot-reload, theme will update)")
     except Exception as e:
-        print(f"❌ Failed to send reload signal: {e}")
+        print(f"[FAILED] Failed to send reload signal: {e}")
 
 
 if __name__ == "__main__":

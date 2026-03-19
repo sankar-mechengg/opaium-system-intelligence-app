@@ -83,13 +83,14 @@ def build() -> None:
 
     if result.returncode == 0:
         exe_path = DIST / APP_NAME / f"{APP_NAME}.exe"
-        print(f"\n✅ Build successful!")
+        # ASCII-only: Windows/GitHub Actions consoles often use cp1252 (no emoji).
+        print("\n[OK] Build successful!")
         print(f"   Executable: {exe_path}")
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
             print(f"   Size: {size_mb:.1f} MB")
     else:
-        print(f"\n❌ Build failed with code {result.returncode}")
+        print(f"\n[FAILED] Build failed with code {result.returncode}")
         sys.exit(1)
 
 

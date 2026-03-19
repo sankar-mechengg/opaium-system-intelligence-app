@@ -49,9 +49,9 @@ def main() -> None:
 
     print(f"\n{'=' * 40}")
     if errors:
-        print(f"  ❌ {errors} check(s) had issues")
+        print(f"  [FAILED] {errors} check(s) had issues")
     else:
-        print(f"  ✅ All checks passed")
+        print("  [OK] All checks passed")
     print(f"{'=' * 40}")
 
     sys.exit(min(errors, 1))
