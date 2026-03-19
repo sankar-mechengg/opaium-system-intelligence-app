@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-
-import pytest
 
 from src.ai.tools.file_renamer import FileRenamerTool
 
 
 class TestFileRenamerTool:
-
     def setup_method(self):
         self.tool = FileRenamerTool()
 
@@ -19,13 +15,14 @@ class TestFileRenamerTool:
         assert self.tool.is_destructive is True
 
     def test_rename_single_file(self, sample_files: Path):
+        # Use distinct names — on Windows readme.txt and README.txt are the same path
         result = self.tool.execute(
             directory=str(sample_files),
-            renames=[{"old_name": "readme.txt", "new_name": "README.txt"}],
+            renames=[{"old_name": "readme.txt", "new_name": "readme_renamed.txt"}],
         )
         assert result.success is True
         assert result.data["succeeded"] == 1
-        assert (sample_files / "README.txt").exists()
+        assert (sample_files / "readme_renamed.txt").exists()
         assert not (sample_files / "readme.txt").exists()
 
     def test_rename_multiple_files(self, sample_files: Path):

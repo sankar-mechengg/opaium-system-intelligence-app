@@ -16,7 +16,6 @@ from src.utils.path_utils import PathUtils
 
 
 class FileSizerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "get_file_sizes"
@@ -73,7 +72,11 @@ class FileSizerTool(BaseTool):
             return ToolResult(
                 success=True,
                 message=f"{Path(path).name}: {PathUtils.format_size(size)}",
-                data={"path": path, "size_bytes": size, "display_size": PathUtils.format_size(size)},
+                data={
+                    "path": path,
+                    "size_bytes": size,
+                    "display_size": PathUtils.format_size(size),
+                },
             )
 
         if mode == "total":
@@ -120,8 +123,7 @@ class FileSizerTool(BaseTool):
         return ToolResult(
             success=True,
             message=(
-                f"{Path(path).name}: {PathUtils.format_size(total)} total, "
-                f"{file_count} files, {folder_count} folders"
+                f"{Path(path).name}: {PathUtils.format_size(total)} total, {file_count} files, {folder_count} folders"
             ),
             data=data,
         )
@@ -133,20 +135,24 @@ class FileSizerTool(BaseTool):
             try:
                 if entry.is_dir(follow_symlinks=False):
                     size = PathUtils.get_folder_size(entry.path)
-                    items.append({
-                        "name": entry.name,
-                        "type": "folder",
-                        "size_bytes": size,
-                        "display_size": PathUtils.format_size(size),
-                    })
+                    items.append(
+                        {
+                            "name": entry.name,
+                            "type": "folder",
+                            "size_bytes": size,
+                            "display_size": PathUtils.format_size(size),
+                        }
+                    )
                 elif entry.is_file(follow_symlinks=False):
                     size = entry.stat().st_size
-                    items.append({
-                        "name": entry.name,
-                        "type": "file",
-                        "size_bytes": size,
-                        "display_size": PathUtils.format_size(size),
-                    })
+                    items.append(
+                        {
+                            "name": entry.name,
+                            "type": "file",
+                            "size_bytes": size,
+                            "display_size": PathUtils.format_size(size),
+                        }
+                    )
             except OSError:
                 continue
 
@@ -165,6 +171,7 @@ class FileSizerTool(BaseTool):
 
     def _largest_files(self, path: str, top_n: int, recursive: bool) -> ToolResult:
         from src.core.file_scanner import FileScanner
+
         large_files = FileScanner.find_large_files(path, min_size_bytes=0, recursive=recursive)
         top = large_files[:top_n]
 
@@ -172,12 +179,14 @@ class FileSizerTool(BaseTool):
         data_items = []
         for f in top:
             lines.append(f"  {f.name}: {f.display_size}")
-            data_items.append({
-                "name": f.name,
-                "path": f.path,
-                "size_bytes": f.size_bytes,
-                "display_size": f.display_size,
-            })
+            data_items.append(
+                {
+                    "name": f.name,
+                    "path": f.path,
+                    "size_bytes": f.size_bytes,
+                    "display_size": f.display_size,
+                }
+            )
 
         return ToolResult(
             success=True,

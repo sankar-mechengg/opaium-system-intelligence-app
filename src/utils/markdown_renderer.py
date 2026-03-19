@@ -22,8 +22,8 @@ def _highlight_code(code: str, language: str) -> str:
     """Syntax-highlight a code block using Pygments."""
     try:
         from pygments import highlight
-        from pygments.lexers import get_lexer_by_name, guess_lexer, TextLexer
         from pygments.formatters import HtmlFormatter
+        from pygments.lexers import TextLexer, get_lexer_by_name, guess_lexer
 
         code = code.rstrip("\n")
         lexer = TextLexer()
@@ -84,7 +84,7 @@ def _extract_fenced_code(md_text: str) -> tuple[str, dict[str, str]]:
         placeholders[key] = (
             '<table width="100%" cellspacing="0" cellpadding="0" style="margin:6px 0;">'
             '<tr><td style="background-color:#2d2d2d; border-radius:6px; padding:8px 10px;">'
-            '<pre style="margin:0; font-family:Consolas,\'Cascadia Code\',monospace; '
+            "<pre style=\"margin:0; font-family:Consolas,'Cascadia Code',monospace; "
             'font-size:9pt; white-space:pre-wrap; color:#f8f8f2;">'
             f"{highlighted}</pre></td></tr></table>"
         )
@@ -213,8 +213,4 @@ table {{ border-collapse: collapse; }}
     except Exception as e:
         logger.error(f"Markdown rendering failed: {e}")
         esc = html.escape(text)
-        return (
-            "<html><body><p style=\"margin:4px 0;\">"
-            + esc.replace("\n", "<br/>")
-            + "</p></body></html>"
-        )
+        return '<html><body><p style="margin:4px 0;">' + esc.replace("\n", "<br/>") + "</p></body></html>"

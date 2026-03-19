@@ -9,17 +9,16 @@ passed between the data engine, UI, and AI layers.
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
-from pathlib import Path
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 from src.utils.time_utils import TimeGroup
 
 
-class ItemType(str, Enum):
+class ItemType(StrEnum):
     """Type of filesystem item."""
+
     FOLDER = "folder"
     FILE = "file"
 
@@ -30,6 +29,7 @@ class RecentItem(BaseModel):
 
     This is the primary data model used in the explorer views.
     """
+
     path: str
     name: str
     item_type: ItemType
@@ -42,9 +42,9 @@ class RecentItem(BaseModel):
     parent_path: str = ""
 
     # Tracking
-    file_id: Optional[int] = None  # NTFS file ID
-    volume_serial: Optional[int] = None
-    lnk_source: Optional[str] = None  # Path to the .lnk file
+    file_id: int | None = None  # NTFS file ID
+    volume_serial: int | None = None
+    lnk_source: str | None = None  # Path to the .lnk file
 
     # Status
     exists: bool = True
@@ -52,7 +52,7 @@ class RecentItem(BaseModel):
 
     # Display
     icon_key: str = ""  # Cache key for icon provider
-    item_count: Optional[tuple[int, int]] = None  # (folders, files) for folders
+    item_count: tuple[int, int] | None = None  # (folders, files) for folders
 
     class Config:
         arbitrary_types_allowed = True
@@ -61,18 +61,21 @@ class RecentItem(BaseModel):
     def display_size(self) -> str:
         """Human-readable size string."""
         from src.utils.path_utils import PathUtils
+
         return PathUtils.format_size(self.size_bytes)
 
     @property
     def display_time(self) -> str:
         """Human-readable relative time."""
         from src.utils.time_utils import TimeUtils
+
         return TimeUtils.format_relative(self.accessed_at)
 
     @property
     def display_datetime(self) -> str:
         """Formatted date-time string."""
         from src.utils.time_utils import TimeUtils
+
         return TimeUtils.format_datetime(self.accessed_at)
 
     @property
@@ -89,26 +92,28 @@ class FolderItem(BaseModel):
     Detailed folder information for the explorer tree and
     file operation tools.
     """
+
     path: str
     name: str
     parent_path: str = ""
     size_bytes: int = 0
     folder_count: int = 0
     file_count: int = 0
-    created_at: Optional[datetime] = None
-    modified_at: Optional[datetime] = None
-    accessed_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    modified_at: datetime | None = None
+    accessed_at: datetime | None = None
     is_hidden: bool = False
     is_system: bool = False
     depth: int = 0  # Nesting depth in tree
 
     # NTFS tracking
-    file_id: Optional[int] = None
-    volume_serial: Optional[int] = None
+    file_id: int | None = None
+    volume_serial: int | None = None
 
     @property
     def display_size(self) -> str:
         from src.utils.path_utils import PathUtils
+
         return PathUtils.format_size(self.size_bytes)
 
     @property
@@ -130,14 +135,15 @@ class FileItem(BaseModel):
     Detailed file information for preview panel and
     file operation tools.
     """
+
     path: str
     name: str
     extension: str = ""
     parent_path: str = ""
     size_bytes: int = 0
-    created_at: Optional[datetime] = None
-    modified_at: Optional[datetime] = None
-    accessed_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    modified_at: datetime | None = None
+    accessed_at: datetime | None = None
     is_hidden: bool = False
     is_readonly: bool = False
 
@@ -152,6 +158,7 @@ class FileItem(BaseModel):
     @property
     def display_size(self) -> str:
         from src.utils.path_utils import PathUtils
+
         return PathUtils.format_size(self.size_bytes)
 
     @classmethod
@@ -178,6 +185,7 @@ class TrackingRecord(BaseModel):
     Record in the custom tracking database.
     Maps NTFS file IDs to paths for rename/move detection.
     """
+
     file_id: int
     volume_serial: int
     path: str
@@ -193,7 +201,8 @@ class OperationRecord(BaseModel):
     """
     Record of an AI-performed file operation for the undo journal.
     """
-    id: Optional[int] = None
+
+    id: int | None = None
     timestamp: datetime = Field(default_factory=datetime.now)
     operation_type: str  # rename, move, copy, delete, organize, etc.
     description: str  # Human-readable description

@@ -8,10 +8,8 @@ Runs on a QTimer in the background.
 
 from __future__ import annotations
 
-from typing import Optional
-
-from PySide6.QtCore import QObject, QTimer, Signal
 from loguru import logger
+from PySide6.QtCore import QObject, QTimer, Signal
 
 from src.config.constants import AppConstants
 from src.undo.operation_journal import OperationJournal
@@ -35,7 +33,7 @@ class AutoPurge(QObject):
         journal: OperationJournal,
         purge_days: int = AppConstants.UNDO_PURGE_DAYS,
         check_interval_ms: int = AppConstants.UNDO_PURGE_CHECK_INTERVAL * 1000,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._journal = journal

@@ -9,15 +9,15 @@ detecting renames and moves. Supplements the .lnk-based tracking.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Generator
 
 from loguru import logger
 
 from src.config.constants import AppConstants
-from src.core.models import TrackingRecord, ItemType
+from src.core.models import ItemType, TrackingRecord
 
 
 class TrackingDB:
@@ -28,9 +28,9 @@ class TrackingDB:
     moves within the same drive can be detected and auto-updated.
     """
 
-    def __init__(self, db_path: Optional[Path] = None) -> None:
+    def __init__(self, db_path: Path | None = None) -> None:
         self._db_path = db_path or AppConstants.TRACKING_DB_FILE
-        self._connection: Optional[sqlite3.Connection] = None
+        self._connection: sqlite3.Connection | None = None
         self._initialize()
 
     def _initialize(self) -> None:
@@ -135,7 +135,7 @@ class TrackingDB:
                     (file_id, volume_serial, path, name, item_type.value, now, now),
                 )
 
-    def get_current_path(self, file_id: int, volume_serial: int) -> Optional[str]:
+    def get_current_path(self, file_id: int, volume_serial: int) -> str | None:
         """
         Get the last known path for a file ID.
 
@@ -154,7 +154,7 @@ class TrackingDB:
             row = cursor.fetchone()
             return row["path"] if row else None
 
-    def find_by_path(self, path: str) -> Optional[TrackingRecord]:
+    def find_by_path(self, path: str) -> TrackingRecord | None:
         """Look up a tracking record by path."""
         with self._cursor() as cursor:
             cursor.execute(
@@ -164,7 +164,7 @@ class TrackingDB:
             row = cursor.fetchone()
             return self._row_to_record(row) if row else None
 
-    def get_all_active(self, item_type: Optional[ItemType] = None) -> list[TrackingRecord]:
+    def get_all_active(self, item_type: ItemType | None = None) -> list[TrackingRecord]:
         """Get all active tracked items."""
         with self._cursor() as cursor:
             if item_type:
@@ -173,9 +173,7 @@ class TrackingDB:
                     (item_type.value,),
                 )
             else:
-                cursor.execute(
-                    "SELECT * FROM tracked_items WHERE is_active = 1 ORDER BY last_seen DESC"
-                )
+                cursor.execute("SELECT * FROM tracked_items WHERE is_active = 1 ORDER BY last_seen DESC")
             return [self._row_to_record(row) for row in cursor.fetchall()]
 
     def get_recently_seen(self, max_days: int = 30) -> list[TrackingRecord]:
@@ -193,10 +191,10 @@ class TrackingDB:
     def get_all_tracked(self, active_only: bool = True) -> list[TrackingRecord]:
         """
         Get all tracked items from the database.
-        
+
         Args:
             active_only: If True, only return active items (default).
-            
+
         Returns:
             List of TrackingRecord objects.
         """

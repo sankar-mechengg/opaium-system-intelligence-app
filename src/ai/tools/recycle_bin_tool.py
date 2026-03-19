@@ -13,17 +13,13 @@ from src.core.recycle_bin import RecycleBinManager
 
 
 class RecycleBinTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "recycle_bin"
 
     @property
     def description(self) -> str:
-        return (
-            "Query the Windows Recycle Bin. Can show how many items are in it, "
-            "total size, and optionally empty it."
-        )
+        return "Query the Windows Recycle Bin. Can show how many items are in it, total size, and optionally empty it."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -54,10 +50,10 @@ class RecycleBinTool(BaseTool):
             message="Ready to empty Recycle Bin",
             requires_approval=True,
             preview=[
-                f"Will permanently empty the Recycle Bin:",
+                "Will permanently empty the Recycle Bin:",
                 f"  Items: {info.item_count}",
                 f"  Size: {info.display_size}",
-                f"  This action cannot be undone.",
+                "  This action cannot be undone.",
             ],
         )
 
@@ -69,10 +65,7 @@ class RecycleBinTool(BaseTool):
             info = RecycleBinManager.get_info()
             return ToolResult(
                 success=True,
-                message=(
-                    f"Recycle Bin: {info.item_count} items, "
-                    f"{info.display_size}"
-                ),
+                message=(f"Recycle Bin: {info.item_count} items, {info.display_size}"),
                 data={
                     "item_count": info.item_count,
                     "size_bytes": info.total_size_bytes,

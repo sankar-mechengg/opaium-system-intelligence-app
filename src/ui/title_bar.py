@@ -8,11 +8,14 @@ Supports window dragging.
 
 from __future__ import annotations
 
+from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtGui import QFont, QMouseEvent, QPixmap
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QLabel, QPushButton, QSizePolicy,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QWidget,
 )
-from PySide6.QtCore import Qt, Signal, QPoint
-from PySide6.QtGui import QFont, QPixmap, QMouseEvent
 
 from src.config.constants import AppConstants
 
@@ -57,7 +60,8 @@ class TitleBar(QWidget):
         if AppConstants.LOGO_PATH.exists():
             pixmap = QPixmap(str(AppConstants.LOGO_PATH))
             scaled = pixmap.scaled(
-                28, 28,
+                28,
+                28,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )

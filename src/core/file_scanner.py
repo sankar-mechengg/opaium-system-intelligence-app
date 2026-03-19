@@ -8,16 +8,16 @@ like counting, sizing, and organizing files.
 
 from __future__ import annotations
 
-import os
 import hashlib
+import os
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Callable
 
 from loguru import logger
 
 from src.config.constants import AppConstants
-from src.core.models import FolderItem, FileItem, ItemType
+from src.core.models import FileItem, FolderItem
 from src.utils.path_utils import PathUtils
 
 
@@ -35,7 +35,7 @@ class FileScanner:
         path: str | Path,
         recursive: bool = False,
         max_depth: int = AppConstants.MAX_SCAN_DEPTH,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> tuple[list[FolderItem], list[FileItem]]:
         """
         Scan a directory and return its contents.
@@ -69,7 +69,7 @@ class FileScanner:
         path: Path,
         folders: list[FolderItem],
         files: list[FileItem],
-        progress_callback: Optional[Callable[[int, int], None]],
+        progress_callback: Callable[[int, int], None] | None,
     ) -> None:
         """Scan a single directory level."""
         try:
@@ -107,7 +107,7 @@ class FileScanner:
         files: list[FileItem],
         current_depth: int,
         max_depth: int,
-        progress_callback: Optional[Callable[[int, int], None]],
+        progress_callback: Callable[[int, int], None] | None,
     ) -> None:
         """Recursively scan directories."""
         if current_depth > max_depth:
@@ -125,8 +125,12 @@ class FileScanner:
                             folders.append(folder)
                             # Recurse
                             self._scan_recursive(
-                                Path(entry.path), folders, files,
-                                current_depth + 1, max_depth, progress_callback,
+                                Path(entry.path),
+                                folders,
+                                files,
+                                current_depth + 1,
+                                max_depth,
+                                progress_callback,
                             )
                     elif entry.is_file(follow_symlinks=False):
                         file = self._create_file_item(entry)
@@ -143,7 +147,7 @@ class FileScanner:
         self,
         entry: os.DirEntry,
         depth: int = 0,
-    ) -> Optional[FolderItem]:
+    ) -> FolderItem | None:
         """Create a FolderItem from a directory entry."""
         try:
             stat = entry.stat(follow_symlinks=False)
@@ -164,7 +168,7 @@ class FileScanner:
         except (OSError, PermissionError):
             return None
 
-    def _create_file_item(self, entry: os.DirEntry) -> Optional[FileItem]:
+    def _create_file_item(self, entry: os.DirEntry) -> FileItem | None:
         """Create a FileItem from a file entry."""
         try:
             stat = entry.stat(follow_symlinks=False)
@@ -186,7 +190,7 @@ class FileScanner:
             return None
 
     @staticmethod
-    def get_file_hash(file_path: str | Path, algorithm: str = "md5") -> Optional[str]:
+    def get_file_hash(file_path: str | Path, algorithm: str = "md5") -> str | None:
         """
         Calculate hash of a file for duplicate detection.
 
@@ -270,15 +274,17 @@ class FileScanner:
                             stat = os.stat(fpath)
                             ext = Path(fname).suffix.lstrip(".").lower()
                             type_info = FileItem.classify_extension(ext)
-                            large_files.append(FileItem(
-                                path=fpath,
-                                name=fname,
-                                extension=ext,
-                                parent_path=dirpath,
-                                size_bytes=size,
-                                modified_at=datetime.fromtimestamp(stat.st_mtime),
-                                **type_info,
-                            ))
+                            large_files.append(
+                                FileItem(
+                                    path=fpath,
+                                    name=fname,
+                                    extension=ext,
+                                    parent_path=dirpath,
+                                    size_bytes=size,
+                                    modified_at=datetime.fromtimestamp(stat.st_mtime),
+                                    **type_info,
+                                )
+                            )
                     except (OSError, PermissionError):
                         continue
         except (OSError, PermissionError):

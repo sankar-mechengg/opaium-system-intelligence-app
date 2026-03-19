@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -34,7 +34,7 @@ class ConfigManager:
         config.save()
     """
 
-    _instance: Optional[ConfigManager] = None
+    _instance: ConfigManager | None = None
 
     def __new__(cls) -> ConfigManager:
         """Singleton pattern — one config manager across the app."""

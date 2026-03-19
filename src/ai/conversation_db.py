@@ -7,17 +7,15 @@ Each conversation stores its messages, folder context, and metadata.
 
 from __future__ import annotations
 
-import json
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Generator
 
 from loguru import logger
 
 from src.config.constants import AppConstants
-
 
 CONVERSATIONS_DB_FILE = AppConstants.APPDATA_DIR / "conversations.db"
 
@@ -82,9 +80,9 @@ class MessageRecord:
 class ConversationDB:
     """SQLite database for conversation history persistence."""
 
-    def __init__(self, db_path: Optional[Path] = None) -> None:
+    def __init__(self, db_path: Path | None = None) -> None:
         self._db_path = db_path or CONVERSATIONS_DB_FILE
-        self._connection: Optional[sqlite3.Connection] = None
+        self._connection: sqlite3.Connection | None = None
         self._initialize()
 
     def _initialize(self) -> None:
@@ -148,8 +146,7 @@ class ConversationDB:
         now = datetime.now().isoformat()
         with self._cursor() as cursor:
             cursor.execute(
-                "INSERT INTO conversations (title, folder_path, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?)",
+                "INSERT INTO conversations (title, folder_path, created_at, updated_at) VALUES (?, ?, ?, ?)",
                 (title, folder_path, now, now),
             )
             conv_id = cursor.lastrowid
@@ -178,8 +175,7 @@ class ConversationDB:
         now = datetime.now().isoformat()
         with self._cursor() as cursor:
             cursor.execute(
-                "INSERT INTO messages (conversation_id, role, content, timestamp) "
-                "VALUES (?, ?, ?, ?)",
+                "INSERT INTO messages (conversation_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
                 (conversation_id, role, content, now),
             )
             # Update conversation timestamp

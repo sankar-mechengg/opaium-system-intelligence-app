@@ -8,13 +8,11 @@ Runs transcription in a background thread to avoid UI blocking.
 
 from __future__ import annotations
 
-from typing import Optional
-
-from PySide6.QtCore import QObject, Signal
 from loguru import logger
+from PySide6.QtCore import QObject, Signal
 
 from src.ai.openai_client import OpenAIClient
-from src.utils.thread_pool import Worker, ThreadPoolManager
+from src.utils.thread_pool import ThreadPoolManager, Worker
 
 
 class SpeechTranscriber(QObject):
@@ -34,7 +32,7 @@ class SpeechTranscriber(QObject):
     def __init__(
         self,
         openai_client: OpenAIClient,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._client = openai_client

@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
-import pytest
-
-from src.ai.tools.file_mover import FileMoverTool
 from src.ai.tools.file_copier import FileCopierTool
+from src.ai.tools.file_mover import FileMoverTool
 
 
 class TestFileMoverTool:
-
     def setup_method(self):
         self.tool = FileMoverTool()
 
@@ -75,7 +71,6 @@ class TestFileMoverTool:
 
 
 class TestFileCopierTool:
-
     def setup_method(self):
         self.tool = FileCopierTool()
 

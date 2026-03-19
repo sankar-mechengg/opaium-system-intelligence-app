@@ -20,7 +20,6 @@ from src.core.models import OperationRecord
 
 
 class FolderFlattenerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "flatten_folder"
@@ -127,7 +126,7 @@ class FolderFlattenerTool(BaseTool):
         # Remove empty directories
         removed_dirs = 0
         if remove_empty:
-            for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+            for dirpath, _dirnames, _filenames in os.walk(path, topdown=False):
                 if dirpath == path:
                     continue
                 try:

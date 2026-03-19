@@ -7,9 +7,7 @@ Provides information about bin contents and space usage.
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
-from typing import Optional, NamedTuple
+from typing import NamedTuple
 
 from loguru import logger
 
@@ -18,6 +16,7 @@ from src.utils.path_utils import PathUtils
 
 class RecycleBinInfo(NamedTuple):
     """Information about the Recycle Bin."""
+
     item_count: int
     total_size_bytes: int
     display_size: str
@@ -25,6 +24,7 @@ class RecycleBinInfo(NamedTuple):
 
 class RecycleBinItem(NamedTuple):
     """A single item in the Recycle Bin."""
+
     original_path: str
     name: str
     size_bytes: int
@@ -128,9 +128,7 @@ class RecycleBinManager:
 
                 # Get Recycle Bin PIDL
                 pidl = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_BITBUCKET)
-                recycle_bin = desktop.BindToObject(
-                    pidl, None, shell.IID_IShellFolder
-                )
+                recycle_bin = desktop.BindToObject(pidl, None, shell.IID_IShellFolder)
 
                 # Enumerate items
                 enum = recycle_bin.EnumObjects(0, shellcon.SHCONTF_FOLDERS | shellcon.SHCONTF_NONFOLDERS)
@@ -148,13 +146,15 @@ class RecycleBinManager:
                                         item_pidl,
                                         shellcon.SHGDN_NORMAL,
                                     )
-                                    items.append(RecycleBinItem(
-                                        original_path="",
-                                        name=name or "<unknown>",
-                                        size_bytes=0,
-                                        deleted_at="",
-                                        is_folder=False,
-                                    ))
+                                    items.append(
+                                        RecycleBinItem(
+                                            original_path="",
+                                            name=name or "<unknown>",
+                                            size_bytes=0,
+                                            deleted_at="",
+                                            is_folder=False,
+                                        )
+                                    )
                                 except Exception:
                                     continue
                         except StopIteration:

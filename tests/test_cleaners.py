@@ -2,24 +2,20 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-
-import pytest
 
 from src.ai.tools.empty_folder_cleaner import EmptyFolderCleanerTool
 from src.ai.tools.folder_flattener import FolderFlattenerTool
 
 
 class TestEmptyFolderCleanerTool:
-
     def setup_method(self):
         self.tool = EmptyFolderCleanerTool()
 
     def test_find_empty_folders(self, nested_dirs: Path):
         result = self.tool.execute(path=str(nested_dirs), dry_run=True)
         assert result.success is True
-        assert result.data["count"] == 2  # sub2 and sub3/sub3a + sub3
+        assert result.data["count"] == 3  # sub2, sub3/sub3a, sub3 (all empty dirs)
 
     def test_remove_empty_folders(self, nested_dirs: Path):
         result = self.tool.execute(path=str(nested_dirs), dry_run=False)
@@ -33,11 +29,10 @@ class TestEmptyFolderCleanerTool:
     def test_preview_mode(self, nested_dirs: Path):
         result = self.tool.preview(path=str(nested_dirs))
         assert result.requires_approval is True
-        assert result.data["count"] >= 2
+        assert result.data["count"] >= 3
 
 
 class TestFolderFlattenerTool:
-
     def setup_method(self):
         self.tool = FolderFlattenerTool()
 

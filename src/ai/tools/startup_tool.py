@@ -13,17 +13,13 @@ from src.core.startup_manager import StartupManager
 
 
 class StartupTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "startup_programs"
 
     @property
     def description(self) -> str:
-        return (
-            "List programs configured to start with Windows. "
-            "Shows entries from registry and Startup folder."
-        )
+        return "List programs configured to start with Windows. Shows entries from registry and Startup folder."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -66,8 +62,7 @@ class StartupTool(BaseTool):
             lines.append(f"    {entry.command}")
 
         data_entries = [
-            {"name": e.name, "command": e.command, "source": e.source, "enabled": e.enabled}
-            for e in entries
+            {"name": e.name, "command": e.command, "source": e.source, "enabled": e.enabled} for e in entries
         ]
 
         return ToolResult(

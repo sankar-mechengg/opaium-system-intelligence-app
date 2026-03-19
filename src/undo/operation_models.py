@@ -9,14 +9,15 @@ what the reverse operation would look like.
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
-from typing import Optional, Any
+from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class OperationType(str, Enum):
+class OperationType(StrEnum):
     """Types of undoable file operations."""
+
     RENAME = "rename"
     BATCH_RENAME = "batch_rename"
     MOVE = "move"
@@ -36,6 +37,7 @@ class OperationType(str, Enum):
 
 class FileMapping(BaseModel):
     """Maps a source file to its destination after an operation."""
+
     source: str
     destination: str
     original_name: str = ""
@@ -53,7 +55,8 @@ class Operation(BaseModel):
     - For copies: paths of created copies
     - For organize: full file mapping of what went where
     """
-    id: Optional[int] = None
+
+    id: int | None = None
     timestamp: datetime = Field(default_factory=datetime.now)
     operation_type: OperationType
     description: str
@@ -67,6 +70,7 @@ class Operation(BaseModel):
     @property
     def display_time(self) -> str:
         from src.utils.time_utils import TimeUtils
+
         return TimeUtils.format_relative(self.timestamp)
 
     @property

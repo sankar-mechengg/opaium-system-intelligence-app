@@ -7,16 +7,22 @@ Auto-refreshes and supports clearing history.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QFrame,
-)
+from loguru import logger
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
-from loguru import logger
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
-from src.undo.undo_manager import UndoManager
+from src.core.models import OperationRecord
 from src.ui.history.history_row import HistoryRow
+from src.undo.undo_manager import UndoManager
 
 
 class HistoryPanel(QWidget):
@@ -129,18 +135,15 @@ class HistoryPanel(QWidget):
             row = HistoryRow(record, operation.id or 0)
             row.undo_clicked.connect(self.undo_requested.emit)
             self._rows.append(row)
-            self._container_layout.insertWidget(
-                self._container_layout.count() - 1, row
-            )
+            self._container_layout.insertWidget(self._container_layout.count() - 1, row)
 
     @staticmethod
-    def _operation_to_record(op) -> "OperationRecord":
+    def _operation_to_record(op) -> OperationRecord:
         """Convert an undo Operation to an OperationRecord for display."""
-        from src.core.models import OperationRecord
         return OperationRecord(
             id=op.id,
             timestamp=op.timestamp,
-            operation_type=op.operation_type.value if hasattr(op.operation_type, 'value') else str(op.operation_type),
+            operation_type=op.operation_type.value if hasattr(op.operation_type, "value") else str(op.operation_type),
             description=op.description,
             source_paths=[m.source for m in op.file_mappings],
             dest_paths=[m.destination for m in op.file_mappings],

@@ -20,7 +20,6 @@ from src.core.models import OperationRecord
 
 
 class RegexRenamerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "regex_rename"
@@ -178,7 +177,8 @@ class RegexRenamerTool(BaseTool):
             message += f" {failed} failed."
 
         return ToolResult(
-            success=succeeded > 0, message=message,
+            success=succeeded > 0,
+            message=message,
             data={"succeeded": succeeded, "failed": failed},
             operation=operation,
         )

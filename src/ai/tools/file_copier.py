@@ -20,7 +20,6 @@ from src.core.models import OperationRecord
 
 
 class FileCopierTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "copy_files"
@@ -28,8 +27,7 @@ class FileCopierTool(BaseTool):
     @property
     def description(self) -> str:
         return (
-            "Copy files from source to destination directory. "
-            "Can copy specific files by name or filter by extension."
+            "Copy files from source to destination directory. Can copy specific files by name or filter by extension."
         )
 
     @property
@@ -78,6 +76,7 @@ class FileCopierTool(BaseTool):
             return ToolResult(success=False, message="No files match the criteria.")
 
         from src.utils.path_utils import PathUtils
+
         total_size = sum(os.path.getsize(f) for f in files if os.path.exists(f))
 
         preview_lines = [

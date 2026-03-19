@@ -44,12 +44,7 @@ def setup_logger(log_level: str = "INFO") -> None:
     logger.add(
         str(AppConstants.LOG_DIR / "opaium_{time:YYYY-MM-DD}.log"),
         level="DEBUG",
-        format=(
-            "{time:YYYY-MM-DD HH:mm:ss.SSS} | "
-            "{level: <8} | "
-            "{name}:{function}:{line} | "
-            "{message}"
-        ),
+        format=("{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} | {message}"),
         rotation="10 MB",
         retention="7 days",
         compression="zip",
@@ -61,12 +56,7 @@ def setup_logger(log_level: str = "INFO") -> None:
     logger.add(
         str(AppConstants.LOG_DIR / "errors.log"),
         level="ERROR",
-        format=(
-            "{time:YYYY-MM-DD HH:mm:ss.SSS} | "
-            "{level: <8} | "
-            "{name}:{function}:{line} | "
-            "{message}\n{exception}"
-        ),
+        format=("{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} | {message}\n{exception}"),
         rotation="5 MB",
         retention="30 days",
         encoding="utf-8",

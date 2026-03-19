@@ -8,24 +8,22 @@ Also collects the OpenAI API key for AI features.
 
 from __future__ import annotations
 
+from loguru import logger
+from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtGui import QFont, QMouseEvent, QPixmap
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QButtonGroup,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
     QRadioButton,
-    QButtonGroup,
-    QFrame,
-    QSpacerItem,
     QSizePolicy,
+    QSpacerItem,
     QStackedWidget,
-    QMessageBox,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, Signal, QPoint
-from PySide6.QtGui import QPixmap, QFont, QMouseEvent
-from loguru import logger
 
 from src.auth.auth_manager import AuthManager
 from src.config.config_manager import ConfigManager
@@ -49,7 +47,7 @@ class FirstRunSetup(QWidget):
         self._config = config
         self._auth_manager = AuthManager(config)
         self._current_step = 0
-        
+
         # For dragging window
         self._drag_position = QPoint()
 
@@ -61,12 +59,11 @@ class FirstRunSetup(QWidget):
         """Configure window."""
         self.setWindowTitle(f"{AppConstants.APP_NAME} — Setup")
         self.setFixedSize(520, 680)
-        self.setWindowFlags(
-            Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint
-        )
-        
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint)
+
         # Center the window on screen
         from PySide6.QtWidgets import QApplication
+
         screen = QApplication.primaryScreen().geometry()
         x = (screen.width() - 520) // 2
         y = (screen.height() - 680) // 2
@@ -84,7 +81,8 @@ class FirstRunSetup(QWidget):
         if AppConstants.LOGO_PATH.exists():
             pixmap = QPixmap(str(AppConstants.LOGO_PATH))
             scaled = pixmap.scaled(
-                120, 120,
+                120,
+                120,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )
@@ -114,9 +112,7 @@ class FirstRunSetup(QWidget):
         desc_label.setObjectName("setupDescription")
         main_layout.addWidget(desc_label)
 
-        main_layout.addSpacerItem(
-            QSpacerItem(0, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        )
+        main_layout.addSpacerItem(QSpacerItem(0, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
 
         # === Stacked Pages ===
         self._stack = QStackedWidget()
@@ -182,9 +178,7 @@ class FirstRunSetup(QWidget):
         self._type_group.addButton(self._password_radio, 1)
         layout.addWidget(self._password_radio)
 
-        layout.addSpacerItem(
-            QSpacerItem(0, 16, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        )
+        layout.addSpacerItem(QSpacerItem(0, 16, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
 
         # Password input
         pwd_label = QLabel("Enter your PIN / Password:")
@@ -241,9 +235,7 @@ class FirstRunSetup(QWidget):
         api_desc.setObjectName("setupDescription")
         layout.addWidget(api_desc)
 
-        layout.addSpacerItem(
-            QSpacerItem(0, 12, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        )
+        layout.addSpacerItem(QSpacerItem(0, 12, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
 
         key_label = QLabel("API Key:")
         key_label.setObjectName("setupFieldLabel")
@@ -263,9 +255,7 @@ class FirstRunSetup(QWidget):
         self._show_key_btn.clicked.connect(self._toggle_key_visibility)
         layout.addWidget(self._show_key_btn)
 
-        api_note = QLabel(
-            "You can skip this step and add the API key later in Settings."
-        )
+        api_note = QLabel("You can skip this step and add the API key later in Settings.")
         api_note.setWordWrap(True)
         api_note.setObjectName("setupNote")
         layout.addWidget(api_note)
@@ -372,7 +362,7 @@ class FirstRunSetup(QWidget):
         else:
             self._api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
             self._show_key_btn.setText("Show Key")
-    
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Record position for window dragging."""
         if event.button() == Qt.MouseButton.LeftButton:

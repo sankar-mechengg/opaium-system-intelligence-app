@@ -7,11 +7,16 @@ Shows success/failure status, details, and undo button if applicable.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QWidget,
-)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.ai.tools.base_tool import ToolResult
 
@@ -127,9 +132,7 @@ class ToolResultWidget(QFrame):
             undo_btn.setFixedHeight(30)
             undo_btn.setMinimumWidth(80)
             undo_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            undo_btn.clicked.connect(
-                lambda: self.undo_requested.emit(self._operation_id)
-            )
+            undo_btn.clicked.connect(lambda: self.undo_requested.emit(self._operation_id))
             btn_layout.addWidget(undo_btn)
 
             layout.addLayout(btn_layout)

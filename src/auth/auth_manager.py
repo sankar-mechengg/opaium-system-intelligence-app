@@ -8,11 +8,8 @@ Auth state is persisted in the encrypted config file.
 
 from __future__ import annotations
 
-import secrets
-from typing import Optional
-
 from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError, VerificationError
+from argon2.exceptions import VerificationError, VerifyMismatchError
 from loguru import logger
 
 from src.config.config_manager import ConfigManager
@@ -132,7 +129,7 @@ class AuthManager:
         self,
         current_password: str,
         new_password: str,
-        new_type: Optional[PasswordType] = None,
+        new_type: PasswordType | None = None,
     ) -> bool:
         """
         Change the current password/PIN.
@@ -185,19 +182,11 @@ class AuthManager:
             if not password.isdigit():
                 raise ValueError("PIN must contain only digits.")
             if len(password) < AppConstants.MIN_PIN_LENGTH:
-                raise ValueError(
-                    f"PIN must be at least {AppConstants.MIN_PIN_LENGTH} digits."
-                )
+                raise ValueError(f"PIN must be at least {AppConstants.MIN_PIN_LENGTH} digits.")
             if len(password) > AppConstants.MAX_PIN_LENGTH:
-                raise ValueError(
-                    f"PIN must be at most {AppConstants.MAX_PIN_LENGTH} digits."
-                )
+                raise ValueError(f"PIN must be at most {AppConstants.MAX_PIN_LENGTH} digits.")
         else:
             if len(password) < AppConstants.MIN_PASSWORD_LENGTH:
-                raise ValueError(
-                    f"Password must be at least {AppConstants.MIN_PASSWORD_LENGTH} characters."
-                )
+                raise ValueError(f"Password must be at least {AppConstants.MIN_PASSWORD_LENGTH} characters.")
             if len(password) > AppConstants.MAX_PASSWORD_LENGTH:
-                raise ValueError(
-                    f"Password must be at most {AppConstants.MAX_PASSWORD_LENGTH} characters."
-                )
+                raise ValueError(f"Password must be at most {AppConstants.MAX_PASSWORD_LENGTH} characters.")

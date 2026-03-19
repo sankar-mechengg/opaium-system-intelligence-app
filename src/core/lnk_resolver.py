@@ -8,16 +8,18 @@ Includes batch resolution and caching for performance.
 
 from __future__ import annotations
 
+import contextlib
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, NamedTuple
+from typing import NamedTuple
 
 from loguru import logger
 
 
 class LnkInfo(NamedTuple):
     """Resolved information from a .lnk file."""
+
     target_path: str
     working_dir: str
     arguments: str
@@ -25,8 +27,8 @@ class LnkInfo(NamedTuple):
     icon_location: str
     is_directory: bool
     exists: bool
-    created_at: Optional[datetime]
-    modified_at: Optional[datetime]
+    created_at: datetime | None
+    modified_at: datetime | None
 
 
 class LnkResolver:
@@ -36,10 +38,10 @@ class LnkResolver:
     """
 
     def __init__(self) -> None:
-        self._cache: dict[str, Optional[LnkInfo]] = {}
-        self._com_available: Optional[bool] = None
+        self._cache: dict[str, LnkInfo | None] = {}
+        self._com_available: bool | None = None
 
-    def resolve(self, lnk_path: str | Path) -> Optional[LnkInfo]:
+    def resolve(self, lnk_path: str | Path) -> LnkInfo | None:
         """
         Resolve a .lnk file to its target information.
 
@@ -62,7 +64,7 @@ class LnkResolver:
         self._cache[lnk_str] = result
         return result
 
-    def resolve_target_path(self, lnk_path: str | Path) -> Optional[str]:
+    def resolve_target_path(self, lnk_path: str | Path) -> str | None:
         """
         Quick method to just get the target path.
 
@@ -77,7 +79,7 @@ class LnkResolver:
             return info.target_path
         return None
 
-    def batch_resolve(self, lnk_paths: list[str | Path]) -> dict[str, Optional[LnkInfo]]:
+    def batch_resolve(self, lnk_paths: list[str | Path]) -> dict[str, LnkInfo | None]:
         """
         Resolve multiple .lnk files efficiently.
 
@@ -87,12 +89,13 @@ class LnkResolver:
         Returns:
             Dict mapping lnk path → LnkInfo.
         """
-        results: dict[str, Optional[LnkInfo]] = {}
+        results: dict[str, LnkInfo | None] = {}
 
         # Initialize COM once for all resolutions
         com_initialized = False
         try:
             import pythoncom
+
             pythoncom.CoInitialize()
             com_initialized = True
         except Exception:
@@ -105,13 +108,14 @@ class LnkResolver:
             if com_initialized:
                 try:
                     import pythoncom
+
                     pythoncom.CoUninitialize()
                 except Exception:
                     pass
 
         return results
 
-    def _resolve_via_com(self, lnk_path: str) -> Optional[LnkInfo]:
+    def _resolve_via_com(self, lnk_path: str) -> LnkInfo | None:
         """Resolve using Windows COM Shell API."""
         if self._com_available is False:
             return None
@@ -143,10 +147,8 @@ class LnkResolver:
                     shortcut.Resolve(0, shellcon.SLR_UPDATE | shellcon.SLR_NO_UI | shellcon.SLR_NOSEARCH)
                 except Exception:
                     # Fallback: try without SLR_NOSEARCH
-                    try:
+                    with contextlib.suppress(Exception):
                         shortcut.Resolve(0, shellcon.SLR_NO_UI)
-                    except Exception:
-                        pass
 
                 target_path, _ = shortcut.GetPath(shell.SLGP_RAWPATH)
                 working_dir = shortcut.GetWorkingDirectory()
@@ -188,10 +190,8 @@ class LnkResolver:
 
             finally:
                 if should_uninit:
-                    try:
+                    with contextlib.suppress(Exception):
                         pythoncom.CoUninitialize()
-                    except Exception:
-                        pass
 
         except ImportError:
             self._com_available = False
@@ -201,7 +201,7 @@ class LnkResolver:
             logger.debug(f"COM resolution failed for {lnk_path}: {e}")
             return None
 
-    def _resolve_via_pylnk(self, lnk_path: str) -> Optional[LnkInfo]:
+    def _resolve_via_pylnk(self, lnk_path: str) -> LnkInfo | None:
         """Resolve using pylnk3 as fallback."""
         try:
             import pylnk3

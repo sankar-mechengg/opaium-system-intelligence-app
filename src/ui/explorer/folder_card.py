@@ -8,19 +8,21 @@ Supports single-click (select/preview) and double-click (open in Explorer).
 
 from __future__ import annotations
 
-import os
+import contextlib
 import subprocess
-from pathlib import Path
 
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QFont, QMouseEvent
 from PySide6.QtWidgets import (
-    QFrame, QVBoxLayout, QLabel, QWidget, QSizePolicy,
+    QFrame,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QFont, QMouseEvent, QPixmap, QPainter, QColor
 
+from src.config.constants import AppConstants
 from src.core.models import RecentItem
 from src.utils.time_utils import TimeUtils
-from src.config.constants import AppConstants
 
 
 class FolderCard(QFrame):
@@ -69,6 +71,7 @@ class FolderCard(QFrame):
 
         # Use Qt's built-in folder icon
         from src.utils.icon_provider import IconProvider
+
         provider = IconProvider()
         icon = provider.get_folder_icon(self._item.path if self._item.exists else None)
         pixmap = icon.pixmap(QSize(48, 48))
@@ -162,7 +165,5 @@ class FolderCard(QFrame):
             self.double_clicked.emit(self._item)
             # Open in Windows Explorer
             if self._item.exists:
-                try:
+                with contextlib.suppress(Exception):
                     subprocess.Popen(["explorer", self._item.path])
-                except Exception:
-                    pass

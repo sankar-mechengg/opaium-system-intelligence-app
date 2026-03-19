@@ -16,7 +16,6 @@ from src.utils.path_utils import PathUtils
 
 
 class LargeFileFinderTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "find_large_files"
@@ -78,13 +77,15 @@ class LargeFileFinderTool(BaseTool):
                     try:
                         size = os.path.getsize(fpath)
                         if size >= min_bytes:
-                            large_files.append({
-                                "name": fname,
-                                "path": fpath,
-                                "size_bytes": size,
-                                "display_size": PathUtils.format_size(size),
-                                "extension": Path(fname).suffix.lstrip(".").lower(),
-                            })
+                            large_files.append(
+                                {
+                                    "name": fname,
+                                    "path": fpath,
+                                    "size_bytes": size,
+                                    "display_size": PathUtils.format_size(size),
+                                    "extension": Path(fname).suffix.lstrip(".").lower(),
+                                }
+                            )
                     except OSError:
                         continue
         except (OSError, PermissionError) as e:
@@ -102,10 +103,7 @@ class LargeFileFinderTool(BaseTool):
                 data={"files": [], "count": 0},
             )
 
-        lines = [
-            f"Found {len(large_files)} files over {min_size_mb} MB "
-            f"({PathUtils.format_size(total_size)} total):"
-        ]
+        lines = [f"Found {len(large_files)} files over {min_size_mb} MB ({PathUtils.format_size(total_size)} total):"]
         for f in result_files:
             lines.append(f"  {f['display_size']:>10s}  {f['name']}")
 

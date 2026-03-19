@@ -19,17 +19,13 @@ from src.core.models import OperationRecord
 
 
 class EmptyFolderCleanerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "clean_empty_folders"
 
     @property
     def description(self) -> str:
-        return (
-            "Find and remove empty folders in a directory. "
-            "Scans recursively to find nested empty folder trees."
-        )
+        return "Find and remove empty folders in a directory. Scans recursively to find nested empty folder trees."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -132,10 +128,11 @@ class EmptyFolderCleanerTool(BaseTool):
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
             if dirpath == path:
                 continue
-            if not dirnames and not filenames:
-                empty.append(dirpath)
-            elif all(
-                os.path.join(dirpath, d) in empty for d in dirnames
-            ) and not filenames:
+            if (
+                not dirnames
+                and not filenames
+                or all(os.path.join(dirpath, d) in empty for d in dirnames)
+                and not filenames
+            ):
                 empty.append(dirpath)
         return empty

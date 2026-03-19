@@ -15,12 +15,10 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
-from PySide6.QtCore import QObject, QTimer, Signal
 from loguru import logger
+from PySide6.QtCore import QObject, QTimer, Signal
 
-from src.config.constants import AppConstants
 from src.core.models import ItemType
 from src.core.tracking_db import TrackingDB
 from src.core.usn_journal import USNJournalReader
@@ -35,7 +33,7 @@ class FolderChange:
         change_type: str,  # 'renamed', 'moved', 'deleted', 'created'
         old_path: str,
         new_path: str = "",
-        file_id: Optional[int] = None,
+        file_id: int | None = None,
     ) -> None:
         self.change_type = change_type
         self.old_path = old_path
@@ -65,8 +63,8 @@ class FolderMonitor(QObject):
         monitoring_error: Emitted on monitoring errors.
     """
 
-    folder_changed = Signal(object)   # FolderChange
-    folders_updated = Signal(int)     # Number of changes detected
+    folder_changed = Signal(object)  # FolderChange
+    folders_updated = Signal(int)  # Number of changes detected
     monitoring_error = Signal(str)
 
     # Check interval: 30 seconds
@@ -76,7 +74,7 @@ class FolderMonitor(QObject):
         self,
         tracking_db: TrackingDB,
         check_interval_ms: int = DEFAULT_CHECK_INTERVAL,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._db = tracking_db
@@ -110,6 +108,7 @@ class FolderMonitor(QObject):
     def _initialize_usn_readers(self) -> None:
         """Create USN readers for all available drives."""
         import string
+
         for letter in string.ascii_uppercase:
             drive = f"{letter}:\\"
             if os.path.exists(drive):
@@ -126,7 +125,7 @@ class FolderMonitor(QObject):
             total_changes = 0
 
             # Method 1: Check USN Journal for renames
-            for drive, reader in self._usn_readers.items():
+            for _drive, reader in self._usn_readers.items():
                 changes = self._check_usn_changes(reader)
                 total_changes += len(changes)
                 for change in changes:
@@ -203,10 +202,7 @@ class FolderMonitor(QObject):
                 # (detects replacement with a different folder of same name)
                 current_id = WindowsAPI.get_file_id(item.path)
                 if current_id and current_id != item.file_id:
-                    logger.warning(
-                        f"File ID mismatch at {item.path}: "
-                        f"tracked={item.file_id}, actual={current_id}"
-                    )
+                    logger.warning(f"File ID mismatch at {item.path}: tracked={item.file_id}, actual={current_id}")
                 continue
 
             # Path doesn't exist — try to find new location by file ID
@@ -236,7 +232,7 @@ class FolderMonitor(QObject):
 
         return changes
 
-    def _relocate_by_file_id(self, file_id: int, volume_serial: int) -> Optional[str]:
+    def _relocate_by_file_id(self, file_id: int, volume_serial: int) -> str | None:
         """
         Try to find a folder by its NTFS file ID.
 
@@ -250,6 +246,7 @@ class FolderMonitor(QObject):
 
             # Determine drive letter from volume serial
             import string
+
             for letter in string.ascii_uppercase:
                 drive = f"{letter}:\\"
                 if not os.path.exists(drive):
@@ -265,15 +262,13 @@ class FolderMonitor(QObject):
 
                 # ObjectIdType = 0 (FileIdType)
                 import struct
+
                 struct.pack_into("<IQ", buffer, 0, 0, file_id)
 
                 # This is a simplified approach — full implementation
                 # would use OpenFileById and GetFinalPathNameByHandle
                 # For now, fall back to scanning
-                logger.debug(
-                    f"File ID relocation not fully implemented. "
-                    f"file_id={file_id}, drive={letter}:"
-                )
+                logger.debug(f"File ID relocation not fully implemented. file_id={file_id}, drive={letter}:")
                 return None
 
         except Exception as e:

@@ -7,14 +7,12 @@ in the card/grid views. Caches icons to avoid repeated system calls.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Optional
 
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QIcon, QPixmap, QImage
-from PySide6.QtWidgets import QFileIconProvider
 from loguru import logger
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import QFileIconProvider
 
 from src.config.constants import AppConstants
 
@@ -28,11 +26,11 @@ class IconProvider:
     def __init__(self) -> None:
         self._provider = QFileIconProvider()
         self._cache: dict[str, QIcon] = {}
-        self._default_folder_icon: Optional[QIcon] = None
-        self._default_file_icon: Optional[QIcon] = None
-        self._app_icon: Optional[QIcon] = None
+        self._default_folder_icon: QIcon | None = None
+        self._default_file_icon: QIcon | None = None
+        self._app_icon: QIcon | None = None
 
-    def get_folder_icon(self, path: Optional[str | Path] = None) -> QIcon:
+    def get_folder_icon(self, path: str | Path | None = None) -> QIcon:
         """
         Get the icon for a folder.
 
@@ -51,6 +49,7 @@ class IconProvider:
 
         try:
             from PySide6.QtCore import QFileInfo
+
             file_info = QFileInfo(str(path))
             icon = self._provider.icon(file_info)
             if not icon.isNull():
@@ -79,6 +78,7 @@ class IconProvider:
 
         try:
             from PySide6.QtCore import QFileInfo
+
             file_info = QFileInfo(str(path))
             icon = self._provider.icon(file_info)
             if not icon.isNull():
@@ -106,17 +106,13 @@ class IconProvider:
     def _get_default_folder_icon(self) -> QIcon:
         """Get the default folder icon."""
         if self._default_folder_icon is None:
-            self._default_folder_icon = self._provider.icon(
-                QFileIconProvider.IconType.Folder
-            )
+            self._default_folder_icon = self._provider.icon(QFileIconProvider.IconType.Folder)
         return self._default_folder_icon
 
     def _get_default_file_icon(self) -> QIcon:
         """Get the default file icon."""
         if self._default_file_icon is None:
-            self._default_file_icon = self._provider.icon(
-                QFileIconProvider.IconType.File
-            )
+            self._default_file_icon = self._provider.icon(QFileIconProvider.IconType.File)
         return self._default_file_icon
 
     def clear_cache(self) -> None:

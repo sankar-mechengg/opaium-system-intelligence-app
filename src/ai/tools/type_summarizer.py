@@ -17,17 +17,13 @@ from src.utils.path_utils import PathUtils
 
 
 class TypeSummarizerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "summarize_file_types"
 
     @property
     def description(self) -> str:
-        return (
-            "Get a summary of file types in a directory. Shows count and "
-            "total size for each file extension."
-        )
+        return "Get a summary of file types in a directory. Shows count and total size for each file extension."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -87,17 +83,18 @@ class TypeSummarizerTool(BaseTool):
 
         summary = []
         for ext, info in sorted_types:
-            summary.append({
-                "extension": ext,
-                "count": info["count"],
-                "size_bytes": info["size"],
-                "display_size": PathUtils.format_size(info["size"]),
-                "percentage": round(info["count"] / total_files * 100, 1) if total_files else 0,
-            })
+            summary.append(
+                {
+                    "extension": ext,
+                    "count": info["count"],
+                    "size_bytes": info["size"],
+                    "display_size": PathUtils.format_size(info["size"]),
+                    "percentage": round(info["count"] / total_files * 100, 1) if total_files else 0,
+                }
+            )
 
         lines = [
-            f"File type summary for {Path(path).name} "
-            f"({total_files} files, {PathUtils.format_size(total_size)}):",
+            f"File type summary for {Path(path).name} ({total_files} files, {PathUtils.format_size(total_size)}):",
         ]
         for item in summary[:15]:
             bar = "█" * max(1, int(item["percentage"] / 5))

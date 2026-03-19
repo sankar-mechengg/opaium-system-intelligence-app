@@ -20,7 +20,6 @@ from src.core.models import OperationRecord
 
 
 class DateOrganizerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "organize_by_date"

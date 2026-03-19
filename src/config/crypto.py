@@ -12,8 +12,6 @@ import base64
 import hashlib
 import os
 import secrets
-from pathlib import Path
-from typing import Optional
 
 from cryptography.fernet import Fernet, InvalidToken
 from loguru import logger
@@ -36,7 +34,7 @@ class CryptoManager:
     SALT_FILE = AppConstants.APPDATA_DIR / ".salt"
 
     def __init__(self) -> None:
-        self._fernet: Optional[Fernet] = None
+        self._fernet: Fernet | None = None
 
     def _get_machine_identifier(self) -> bytes:
         """Generate a machine-specific identifier."""
@@ -56,8 +54,10 @@ class CryptoManager:
             # Hide the salt file
             try:
                 import ctypes
+
                 ctypes.windll.kernel32.SetFileAttributesW(  # type: ignore[union-attr]
-                    str(self.SALT_FILE), 0x02  # FILE_ATTRIBUTE_HIDDEN
+                    str(self.SALT_FILE),
+                    0x02,  # FILE_ATTRIBUTE_HIDDEN
                 )
             except Exception:
                 pass

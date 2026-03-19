@@ -7,20 +7,17 @@ Groups duplicates and reports total wasted space.
 
 from __future__ import annotations
 
-import os
 import hashlib
+import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
-
-from loguru import logger
 
 from src.ai.tools.base_tool import BaseTool, ToolResult
 from src.utils.path_utils import PathUtils
 
 
 class DuplicateFinderTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "find_duplicates"
@@ -103,7 +100,7 @@ class DuplicateFinderTool(BaseTool):
         hash_groups: dict[str, list[str]] = defaultdict(list)
         files_hashed = 0
 
-        for size, file_list in size_groups.items():
+        for _size, file_list in size_groups.items():
             if len(file_list) < 2:
                 continue
 
@@ -125,14 +122,16 @@ class DuplicateFinderTool(BaseTool):
             wasted = file_size * (len(file_list) - 1)
             total_wasted += wasted
 
-            duplicate_groups.append({
-                "hash": hash_val[:12],
-                "size_bytes": file_size,
-                "display_size": PathUtils.format_size(file_size),
-                "count": len(file_list),
-                "files": [str(f) for f in file_list],
-                "wasted_bytes": wasted,
-            })
+            duplicate_groups.append(
+                {
+                    "hash": hash_val[:12],
+                    "size_bytes": file_size,
+                    "display_size": PathUtils.format_size(file_size),
+                    "count": len(file_list),
+                    "files": [str(f) for f in file_list],
+                    "wasted_bytes": wasted,
+                }
+            )
 
         duplicate_groups.sort(key=lambda g: g["wasted_bytes"], reverse=True)
 
@@ -150,7 +149,7 @@ class DuplicateFinderTool(BaseTool):
             )
             for i, group in enumerate(duplicate_groups[:5]):
                 message_parts.append(
-                    f"  Group {i+1}: {group['count']} copies of "
+                    f"  Group {i + 1}: {group['count']} copies of "
                     f"{Path(group['files'][0]).name} ({group['display_size']} each)"
                 )
         else:

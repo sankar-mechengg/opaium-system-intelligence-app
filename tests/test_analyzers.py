@@ -4,15 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from src.ai.tools.file_age_analyzer import FileAgeAnalyzerTool
 from src.ai.tools.large_file_finder import LargeFileFinderTool
 from src.ai.tools.type_summarizer import TypeSummarizerTool
 
 
 class TestFileAgeAnalyzerTool:
-
     def setup_method(self):
         self.tool = FileAgeAnalyzerTool()
 
@@ -38,11 +35,11 @@ class TestFileAgeAnalyzerTool:
     def test_format_age(self):
         assert "day" in FileAgeAnalyzerTool._format_age(5)
         assert "month" in FileAgeAnalyzerTool._format_age(60)
-        assert "year" in FileAgeAnalyzerTool._format_age(400)
+        # 400+ days uses compact "1y 1m" style
+        assert "y" in FileAgeAnalyzerTool._format_age(400)
 
 
 class TestLargeFileFinderTool:
-
     def setup_method(self):
         self.tool = LargeFileFinderTool()
 
@@ -68,7 +65,6 @@ class TestLargeFileFinderTool:
 
 
 class TestTypeSummarizerTool:
-
     def setup_method(self):
         self.tool = TypeSummarizerTool()
 

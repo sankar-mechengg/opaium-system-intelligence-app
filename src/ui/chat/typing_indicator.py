@@ -7,9 +7,9 @@ for GPT response.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
-from PySide6.QtCore import Qt, QTimer, QSize
-from PySide6.QtGui import QFont, QPainter, QColor, QBrush
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 
 class TypingDot(QWidget):

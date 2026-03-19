@@ -8,8 +8,8 @@ authentication, and main window initialization.
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 
 def main() -> int:
@@ -27,12 +27,11 @@ def main() -> int:
     # Set high DPI attributes before QApplication is created
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
 
-    from PySide6.QtWidgets import QApplication
-    from PySide6.QtCore import Qt
     from PySide6.QtGui import QIcon
+    from PySide6.QtWidgets import QApplication
 
-    from src.config.constants import AppConstants
     from src.config.config_manager import ConfigManager
+    from src.config.constants import AppConstants
     from src.utils.logger import setup_logger
     from src.utils.platform_check import check_platform
 
@@ -40,6 +39,7 @@ def main() -> int:
     setup_logger("INFO")
 
     from loguru import logger
+
     logger.info(f"Starting {AppConstants.APP_NAME} v{AppConstants.APP_VERSION}")
 
     # Platform compatibility check
@@ -73,14 +73,15 @@ def main() -> int:
         icon = QIcon(str(AppConstants.LOGO_ICO_PATH))
     elif AppConstants.LOGO_PATH.exists():
         icon = QIcon(str(AppConstants.LOGO_PATH))
-    
+
     if icon:
         app.setWindowIcon(icon)
-        
+
     # Set Windows taskbar icon explicitly
     if sys.platform == "win32":
         try:
             import ctypes
+
             # Set app user model ID for Windows taskbar
             myappid = f"{AppConstants.APP_ORG}.{AppConstants.APP_NAME}.{AppConstants.APP_VERSION}"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)

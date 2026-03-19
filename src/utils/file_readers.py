@@ -8,14 +8,24 @@ PDF, DOCX, TXT, MD, PPTX, XLSX, CSV, .py, .tex
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
-
 
 # Extensions that are plain text (no special handling)
-PLAIN_TEXT_EXTENSIONS = {".txt", ".md", ".py", ".tex", ".csv", ".json", ".xml", ".html", ".css", ".js", ".ts"}
+PLAIN_TEXT_EXTENSIONS = {
+    ".txt",
+    ".md",
+    ".py",
+    ".tex",
+    ".csv",
+    ".json",
+    ".xml",
+    ".html",
+    ".css",
+    ".js",
+    ".ts",
+}
 
 
-def read_file_content(path: Path, encoding: str = "utf-8", max_chars: int = 500_000) -> Optional[str]:
+def read_file_content(path: Path, encoding: str = "utf-8", max_chars: int = 500_000) -> str | None:
     """
     Read file content, handling PDF, DOCX, PPTX, XLSX, CSV, and plain text.
     Returns None if format is not supported or read fails.
@@ -29,7 +39,7 @@ def read_file_content(path: Path, encoding: str = "utf-8", max_chars: int = 500_
     # Plain text
     if suffix in PLAIN_TEXT_EXTENSIONS or suffix in {".log", ".ini", ".cfg", ".yaml", ".yml"}:
         try:
-            with open(path, "r", encoding=encoding, errors="replace") as f:
+            with open(path, encoding=encoding, errors="replace") as f:
                 return f.read(max_chars)
         except Exception:
             return None
@@ -52,16 +62,17 @@ def read_file_content(path: Path, encoding: str = "utf-8", max_chars: int = 500_
 
     # Fallback: try as text
     try:
-        with open(path, "r", encoding=encoding, errors="replace") as f:
+        with open(path, encoding=encoding, errors="replace") as f:
             return f.read(max_chars)
     except Exception:
         return None
 
 
-def _read_pdf(path: Path, max_chars: int) -> Optional[str]:
+def _read_pdf(path: Path, max_chars: int) -> str | None:
     """Read PDF text content."""
     try:
         import pdfplumber
+
         parts = []
         total = 0
         with pdfplumber.open(path) as pdf:
@@ -76,6 +87,7 @@ def _read_pdf(path: Path, max_chars: int) -> Optional[str]:
     except ImportError:
         try:
             from PyPDF2 import PdfReader
+
             reader = PdfReader(path)
             parts = []
             for page in reader.pages:
@@ -89,10 +101,11 @@ def _read_pdf(path: Path, max_chars: int) -> Optional[str]:
         return None
 
 
-def _read_docx(path: Path, max_chars: int) -> Optional[str]:
+def _read_docx(path: Path, max_chars: int) -> str | None:
     """Read DOCX text content."""
     try:
         from docx import Document
+
         doc = Document(path)
         parts = []
         for para in doc.paragraphs:
@@ -110,10 +123,11 @@ def _read_docx(path: Path, max_chars: int) -> Optional[str]:
         return None
 
 
-def _read_pptx(path: Path, max_chars: int) -> Optional[str]:
+def _read_pptx(path: Path, max_chars: int) -> str | None:
     """Read PPTX text content."""
     try:
         from pptx import Presentation
+
         prs = Presentation(path)
         parts = []
         for slide in prs.slides:
@@ -128,10 +142,11 @@ def _read_pptx(path: Path, max_chars: int) -> Optional[str]:
         return None
 
 
-def _read_xlsx(path: Path, max_chars: int) -> Optional[str]:
+def _read_xlsx(path: Path, max_chars: int) -> str | None:
     """Read XLSX as tab-separated text."""
     try:
         import openpyxl
+
         wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
         parts = []
         for sheet in wb.worksheets:
@@ -207,7 +222,6 @@ def _write_docx(path: Path, content: str) -> bool:
 def _write_xlsx(path: Path, content: str) -> bool:
     """Write content to XLSX (each line becomes a row, tab-separated values become cells)."""
     try:
-        import openpyxl
         from openpyxl import Workbook
 
         wb = Workbook()
@@ -231,9 +245,7 @@ def can_read_format(suffix: str) -> bool:
     suffix = suffix.lower()
     if suffix in PLAIN_TEXT_EXTENSIONS:
         return True
-    if suffix in {".pdf", ".docx", ".pptx", ".xlsx", ".csv"}:
-        return True
-    return False
+    return suffix in {".pdf", ".docx", ".pptx", ".xlsx", ".csv"}
 
 
 def can_write_format(suffix: str) -> bool:
@@ -241,6 +253,4 @@ def can_write_format(suffix: str) -> bool:
     suffix = suffix.lower()
     if suffix in PLAIN_TEXT_EXTENSIONS or suffix in {".csv", ""}:
         return True
-    if suffix in {".docx", ".xlsx"}:
-        return True
-    return False
+    return suffix in {".docx", ".xlsx"}

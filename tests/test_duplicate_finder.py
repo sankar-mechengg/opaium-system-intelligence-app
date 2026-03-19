@@ -4,13 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from src.ai.tools.duplicate_finder import DuplicateFinderTool
 
 
 class TestDuplicateFinderTool:
-
     def setup_method(self):
         self.tool = DuplicateFinderTool()
 

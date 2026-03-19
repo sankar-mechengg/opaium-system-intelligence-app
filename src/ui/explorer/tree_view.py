@@ -9,14 +9,16 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
 
+from PySide6.QtCore import QModelIndex, Qt, Signal
+from PySide6.QtGui import QFont, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
-    QTreeView, QWidget, QVBoxLayout, QLabel, QAbstractItemView,
+    QAbstractItemView,
+    QLabel,
+    QTreeView,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, Signal, QModelIndex
-from PySide6.QtGui import QFont, QStandardItemModel, QStandardItem, QIcon
-from loguru import logger
 
 from src.config.constants import AppConstants
 from src.utils.icon_provider import IconProvider
@@ -124,6 +126,7 @@ class FolderTreeView(QWidget):
         self._model.appendRow(drives_item)
 
         import string
+
         for letter in string.ascii_uppercase:
             drive_path = f"{letter}:\\"
             if os.path.exists(drive_path):
@@ -245,7 +248,7 @@ class FolderTreeView(QWidget):
                     self._tree.setCurrentIndex(self._model.indexFromItem(result))
                     return
 
-    def _find_path_item(self, parent: QStandardItem, path: str) -> Optional[QStandardItem]:
+    def _find_path_item(self, parent: QStandardItem, path: str) -> QStandardItem | None:
         """Recursively find an item by path."""
         for i in range(parent.rowCount()):
             child = parent.child(i)

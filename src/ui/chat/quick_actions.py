@@ -7,11 +7,15 @@ for common file operations.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QPushButton, QScrollArea, QFrame,
-)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QPushButton,
+    QScrollArea,
+    QWidget,
+)
 
 
 class QuickActionChips(QWidget):
@@ -89,4 +93,5 @@ class QuickActionChips(QWidget):
     def set_current_folder(self, folder_path: str) -> None:
         """Update the folder context for chips."""
         from pathlib import Path
+
         self._current_folder = Path(folder_path).name if folder_path else ""

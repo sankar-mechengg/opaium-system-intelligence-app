@@ -7,14 +7,18 @@ Used for "Last 2 Days", "Last Week", "Last Month" groups.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QSizePolicy,
-)
 from PySide6.QtCore import (
-    Qt, Signal, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup,
+    Qt,
+    Signal,
 )
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class CollapsibleSection(QWidget):

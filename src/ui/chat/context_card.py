@@ -12,12 +12,17 @@ import os
 import subprocess
 from pathlib import Path
 
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QVBoxLayout, QLabel, QSizePolicy,
-    QMenu, QApplication,
+    QApplication,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QSizePolicy,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFont, QPainter
 
 from src.ui.chat.message_bubble import StyledBubbleFrame
 
@@ -57,6 +62,7 @@ class ChatContextCard(QFrame):
 
         try:
             from src.utils.icon_provider import IconProvider
+
             provider = IconProvider()
             if is_folder:
                 icon = provider.get_folder_icon(self._path)
@@ -117,15 +123,19 @@ class ChatContextCard(QFrame):
 
         if is_folder:
             menu.addAction("Open in Explorer", lambda: subprocess.Popen(["explorer", self._path]))
-            menu.addAction("Open in Terminal", lambda: subprocess.Popen(
-                ["cmd", "/k", f"cd /d {self._path}"],
-                creationflags=subprocess.CREATE_NEW_CONSOLE,
-            ))
+            menu.addAction(
+                "Open in Terminal",
+                lambda: subprocess.Popen(
+                    ["cmd", "/k", f"cd /d {self._path}"],
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                ),
+            )
         else:
             menu.addAction("Open", lambda: os.startfile(self._path))  # type: ignore
-            menu.addAction("Open Containing Folder", lambda: subprocess.Popen(
-                ["explorer", "/select,", self._path]
-            ))
+            menu.addAction(
+                "Open Containing Folder",
+                lambda: subprocess.Popen(["explorer", "/select,", self._path]),
+            )
 
         menu.addSeparator()
         menu.addAction("Copy Path", lambda: self._copy_to_clipboard(self._path))
@@ -147,9 +157,11 @@ class ChatContextCard(QFrame):
     def _delete_file(self) -> None:
         try:
             from send2trash import send2trash
+
             send2trash(self._path)
         except Exception:
             import shutil
+
             if Path(self._path).is_dir():
                 shutil.rmtree(self._path)
             else:
@@ -159,6 +171,7 @@ class ChatContextCard(QFrame):
         try:
             import ctypes
             from ctypes import wintypes
+
             SEE_MASK_INVOKEIDLIST = 0x0000000C
 
             class SHELLEXECUTEINFO(ctypes.Structure):

@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
-import pytest
-
-from src.ai.tools.smart_organizer import SmartOrganizerTool
 from src.ai.tools.date_organizer import DateOrganizerTool
+from src.ai.tools.smart_organizer import SmartOrganizerTool
 
 
 class TestSmartOrganizerTool:
-
     def setup_method(self):
         self.tool = SmartOrganizerTool()
 
@@ -61,7 +57,6 @@ class TestSmartOrganizerTool:
 
 
 class TestDateOrganizerTool:
-
     def setup_method(self):
         self.tool = DateOrganizerTool()
 
@@ -74,6 +69,7 @@ class TestDateOrganizerTool:
         assert len(subdirs) > 0
         # Should match YYYY-MM pattern
         import re
+
         for d in subdirs:
             assert re.match(r"\d{4}-\d{2}", d), f"Unexpected folder: {d}"
 
@@ -82,6 +78,7 @@ class TestDateOrganizerTool:
         assert result.success is True
         subdirs = [d.name for d in sample_files.iterdir() if d.is_dir()]
         import re
+
         for d in subdirs:
             assert re.match(r"\d{4}$", d)
 

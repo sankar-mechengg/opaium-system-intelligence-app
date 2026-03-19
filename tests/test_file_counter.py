@@ -4,13 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from src.ai.tools.file_counter import FileCounterTool
 
 
 class TestFileCounterTool:
-
     def setup_method(self):
         self.tool = FileCounterTool()
 

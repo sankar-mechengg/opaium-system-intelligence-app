@@ -6,25 +6,21 @@ AI-callable tool for disk space information and usage analysis.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from src.ai.tools.base_tool import BaseTool, ToolResult
 from src.core.disk_utils import DiskUtils
-from src.utils.path_utils import PathUtils
 
 
 class DiskUsageTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "disk_usage"
 
     @property
     def description(self) -> str:
-        return (
-            "Get disk space information. Can show all drives, "
-            "a specific drive, or analyze a folder's disk usage."
-        )
+        return "Get disk space information. Can show all drives, a specific drive, or analyze a folder's disk usage."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -74,17 +70,19 @@ class DiskUsageTool(BaseTool):
                 f"  {d.letter}: [{bar}] {d.percent_used}% "
                 f"({d.display_used} / {d.display_total}) - {d.label} ({d.filesystem})"
             )
-            data_drives.append({
-                "letter": d.letter,
-                "label": d.label,
-                "filesystem": d.filesystem,
-                "total_bytes": d.total_bytes,
-                "used_bytes": d.used_bytes,
-                "free_bytes": d.free_bytes,
-                "percent_used": d.percent_used,
-                "display_total": d.display_total,
-                "display_free": d.display_free,
-            })
+            data_drives.append(
+                {
+                    "letter": d.letter,
+                    "label": d.label,
+                    "filesystem": d.filesystem,
+                    "total_bytes": d.total_bytes,
+                    "used_bytes": d.used_bytes,
+                    "free_bytes": d.free_bytes,
+                    "percent_used": d.percent_used,
+                    "display_total": d.display_total,
+                    "display_free": d.display_free,
+                }
+            )
 
         return ToolResult(success=True, message="\n".join(lines), data={"drives": data_drives})
 
@@ -94,9 +92,8 @@ class DiskUsageTool(BaseTool):
 
         usage = DiskUtils.get_folder_disk_usage(path)
 
-        from pathlib import Path as P
         lines = [
-            f"Disk usage for {P(path).name}:",
+            f"Disk usage for {Path(path).name}:",
             f"  Total size: {usage['display_size']}",
             f"  Files: {usage['file_count']}",
             f"  Folders: {usage['folder_count']}",

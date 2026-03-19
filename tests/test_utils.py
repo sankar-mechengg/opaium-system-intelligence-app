@@ -2,21 +2,17 @@
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pytest
-
 from src.utils.path_utils import PathUtils
-from src.utils.time_utils import TimeUtils, TimeGroup
+from src.utils.time_utils import TimeGroup, TimeUtils
 
 
 class TestPathUtils:
-
     def test_format_size_bytes(self):
         assert PathUtils.format_size(0) == "0 B"
-        assert PathUtils.format_size(512) == "512.0 B"
+        assert PathUtils.format_size(512) == "512 B"
 
     def test_format_size_kb(self):
         assert PathUtils.format_size(1024) == "1.0 KB"
@@ -26,7 +22,7 @@ class TestPathUtils:
         assert PathUtils.format_size(1024 * 1024) == "1.0 MB"
 
     def test_format_size_gb(self):
-        assert PathUtils.format_size(1024 ** 3) == "1.0 GB"
+        assert PathUtils.format_size(1024**3) == "1.0 GB"
 
     def test_get_folder_size(self, sample_files: Path):
         size = PathUtils.get_folder_size(str(sample_files))
@@ -41,14 +37,13 @@ class TestPathUtils:
         txt = sample_files / "readme.txt"
         assert not PathUtils.is_system_or_hidden(str(txt))
 
-    def test_safe_filename(self):
-        assert PathUtils.safe_filename('file<>:"/\\|?*.txt') != ""
-        safe = PathUtils.safe_filename("normal_file.txt")
+    def test_safe_name(self):
+        assert PathUtils.safe_name('file<>:"/\\|?*.txt') != ""
+        safe = PathUtils.safe_name("normal_file.txt")
         assert safe == "normal_file.txt"
 
 
 class TestTimeUtils:
-
     def test_format_relative_just_now(self):
         now = datetime.now()
         result = TimeUtils.format_relative(now)
@@ -69,21 +64,21 @@ class TestTimeUtils:
         result = TimeUtils.format_relative(dt)
         assert "2" in result and "day" in result.lower()
 
-    def test_classify_time_group_recent(self):
+    def test_get_time_group_recent(self):
         dt = datetime.now() - timedelta(hours=6)
-        assert TimeUtils.classify_time_group(dt) == TimeGroup.LAST_2_DAYS
+        assert TimeUtils.get_time_group(dt) == TimeGroup.LAST_2_DAYS
 
-    def test_classify_time_group_week(self):
+    def test_get_time_group_week(self):
         dt = datetime.now() - timedelta(days=4)
-        assert TimeUtils.classify_time_group(dt) == TimeGroup.LAST_WEEK
+        assert TimeUtils.get_time_group(dt) == TimeGroup.LAST_WEEK
 
-    def test_classify_time_group_month(self):
+    def test_get_time_group_month(self):
         dt = datetime.now() - timedelta(days=15)
-        assert TimeUtils.classify_time_group(dt) == TimeGroup.LAST_MONTH
+        assert TimeUtils.get_time_group(dt) == TimeGroup.LAST_MONTH
 
-    def test_classify_time_group_older(self):
+    def test_get_time_group_older(self):
         dt = datetime.now() - timedelta(days=60)
-        assert TimeUtils.classify_time_group(dt) == TimeGroup.OLDER
+        assert TimeUtils.get_time_group(dt) == TimeGroup.OLDER
 
     def test_group_order(self):
         order = TimeUtils.group_order()

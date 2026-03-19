@@ -2,44 +2,41 @@
 
 from __future__ import annotations
 
-import os
-import shutil
-from datetime import datetime
 from pathlib import Path
 
 import pytest
 
-from src.core.models import OperationRecord
-from src.undo.undo_journal import UndoJournal
-from src.undo.undo_executor import UndoExecutor
+from src.undo.operation_journal import OperationJournal
+from src.undo.operation_models import FileMapping, Operation, OperationType
+from src.undo.undo_manager import UndoManager
 
 
-class TestUndoJournal:
-
+class TestOperationJournal:
     @pytest.fixture
     def journal(self, tmp_path: Path):
         db_path = tmp_path / "test_undo.db"
-        return UndoJournal(db_path=db_path)
+        return OperationJournal(db_path=db_path)
 
-    def test_record_operation(self, journal: UndoJournal):
-        op = OperationRecord(
-            timestamp=datetime.now(),
-            operation_type="rename",
+    def test_record_operation(self, journal: OperationJournal):
+        op = Operation(
+            operation_type=OperationType.RENAME,
             description="Renamed 3 files",
-            source_paths=["/a.txt", "/b.txt", "/c.txt"],
-            dest_paths=["/a_new.txt", "/b_new.txt", "/c_new.txt"],
+            file_mappings=[
+                FileMapping(source="/a.txt", destination="/a_new.txt"),
+                FileMapping(source="/b.txt", destination="/b_new.txt"),
+                FileMapping(source="/c.txt", destination="/c_new.txt"),
+            ],
             is_undoable=True,
         )
         op_id = journal.record(op)
         assert op_id > 0
 
-    def test_get_recent(self, journal: UndoJournal):
+    def test_get_recent(self, journal: OperationJournal):
         for i in range(5):
-            op = OperationRecord(
-                timestamp=datetime.now(),
-                operation_type="rename",
+            op = Operation(
+                operation_type=OperationType.RENAME,
                 description=f"Operation {i}",
-                source_paths=[f"/file{i}.txt"],
+                file_mappings=[FileMapping(source=f"/file{i}.txt", destination=f"/out{i}.txt")],
                 is_undoable=True,
             )
             journal.record(op)
@@ -47,62 +44,65 @@ class TestUndoJournal:
         recent = journal.get_recent(limit=3)
         assert len(recent) == 3
 
-    def test_get_operation_by_id(self, journal: UndoJournal):
-        op = OperationRecord(
-            timestamp=datetime.now(),
-            operation_type="move",
+    def test_get_operation_by_id(self, journal: OperationJournal):
+        op = Operation(
+            operation_type=OperationType.MOVE,
             description="Moved files",
-            source_paths=["/old/f.txt"],
-            dest_paths=["/new/f.txt"],
+            file_mappings=[
+                FileMapping(source="/old/f.txt", destination="/new/f.txt"),
+            ],
             is_undoable=True,
         )
         op_id = journal.record(op)
-        retrieved = journal.get(op_id)
+        retrieved = journal.get_operation(op_id)
         assert retrieved is not None
-        assert retrieved.operation_type == "move"
+        assert retrieved.operation_type == OperationType.MOVE
 
-    def test_mark_undone(self, journal: UndoJournal):
-        op = OperationRecord(
-            timestamp=datetime.now(),
-            operation_type="rename",
+    def test_mark_undone(self, journal: OperationJournal):
+        op = Operation(
+            operation_type=OperationType.RENAME,
             description="Test",
-            source_paths=["/a.txt"],
+            file_mappings=[FileMapping(source="/a.txt", destination="/b.txt")],
             is_undoable=True,
         )
         op_id = journal.record(op)
         journal.mark_undone(op_id)
 
-        retrieved = journal.get(op_id)
+        retrieved = journal.get_operation(op_id)
         assert retrieved is not None
         assert retrieved.is_undone is True
 
 
-class TestUndoExecutor:
+class TestUndoManager:
+    @pytest.fixture
+    def manager(self, tmp_path: Path):
+        return UndoManager(OperationJournal(db_path=tmp_path / "undo.db"))
 
-    def test_undo_rename(self, tmp_path: Path):
-        # Setup: create renamed files
+    def test_undo_rename(self, tmp_path: Path, manager: UndoManager):
         new_path = tmp_path / "renamed.txt"
         new_path.write_text("content")
         old_path = tmp_path / "original.txt"
 
-        op = OperationRecord(
-            timestamp=datetime.now(),
-            operation_type="rename",
+        op = Operation(
+            operation_type=OperationType.RENAME,
             description="Test rename undo",
-            source_paths=[str(old_path)],
-            dest_paths=[str(new_path)],
-            original_names=["original.txt"],
-            new_names=["renamed.txt"],
+            file_mappings=[
+                FileMapping(
+                    source=str(old_path),
+                    destination=str(new_path),
+                    original_name="original.txt",
+                    new_name="renamed.txt",
+                ),
+            ],
             is_undoable=True,
         )
 
-        success = UndoExecutor.execute_undo(op)
+        success, _msg = manager.undo_operation(op)
         assert success is True
         assert old_path.exists()
         assert not new_path.exists()
 
-    def test_undo_move(self, tmp_path: Path):
-        # Setup: file was moved from src to dest
+    def test_undo_move(self, tmp_path: Path, manager: UndoManager):
         src_dir = tmp_path / "src"
         dest_dir = tmp_path / "dest"
         src_dir.mkdir()
@@ -112,45 +112,43 @@ class TestUndoExecutor:
         dest_file.write_text("moved content")
         src_file = src_dir / "file.txt"
 
-        op = OperationRecord(
-            timestamp=datetime.now(),
-            operation_type="move",
+        op = Operation(
+            operation_type=OperationType.MOVE,
             description="Test move undo",
-            source_paths=[str(src_file)],
-            dest_paths=[str(dest_file)],
+            file_mappings=[
+                FileMapping(source=str(src_file), destination=str(dest_file)),
+            ],
             is_undoable=True,
         )
 
-        success = UndoExecutor.execute_undo(op)
+        success, _msg = manager.undo_operation(op)
         assert success is True
         assert src_file.exists()
 
-    def test_undo_copy(self, tmp_path: Path):
-        # Undo copy = delete the copies
+    def test_undo_copy(self, tmp_path: Path, manager: UndoManager):
         copy_file = tmp_path / "copy.txt"
         copy_file.write_text("copied")
 
-        op = OperationRecord(
-            timestamp=datetime.now(),
-            operation_type="copy",
+        op = Operation(
+            operation_type=OperationType.COPY,
             description="Test copy undo",
-            source_paths=[str(tmp_path / "original.txt")],
-            dest_paths=[str(copy_file)],
+            file_mappings=[
+                FileMapping(source=str(tmp_path / "original.txt"), destination=str(copy_file)),
+            ],
             is_undoable=True,
             metadata={"undo_action": "delete_copies"},
         )
 
-        success = UndoExecutor.execute_undo(op)
+        success, _msg = manager.undo_operation(op)
         assert success is True
         assert not copy_file.exists()
 
-    def test_undo_non_undoable(self):
-        op = OperationRecord(
-            timestamp=datetime.now(),
-            operation_type="delete",
+    def test_undo_non_undoable(self, manager: UndoManager):
+        op = Operation(
+            operation_type=OperationType.DELETE,
             description="Not undoable",
-            source_paths=["/deleted.txt"],
+            file_mappings=[FileMapping(source="/deleted.txt", destination="")],
             is_undoable=False,
         )
-        success = UndoExecutor.execute_undo(op)
+        success, _msg = manager.undo_operation(op)
         assert success is False

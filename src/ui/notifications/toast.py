@@ -7,19 +7,21 @@ tray balloon notifications.
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
-from PySide6.QtWidgets import (
-    QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGraphicsOpacityEffect,
-    QPushButton,
-)
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, Signal
-from PySide6.QtGui import QFont, QColor
 from loguru import logger
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer, Signal
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QWidget,
+)
 
 
-class NotificationType(str, Enum):
+class NotificationType(StrEnum):
     INFO = "info"
     SUCCESS = "success"
     WARNING = "warning"
@@ -66,11 +68,7 @@ class ToastNotification(QWidget):
 
         color = self.TYPE_COLORS.get(notification_type, "#2196F3")
         self.setStyleSheet(
-            f"#toastNotification {{"
-            f"  background-color: {color};"
-            f"  border-radius: 8px;"
-            f"  padding: 4px 12px;"
-            f"}}"
+            f"#toastNotification {{  background-color: {color};  border-radius: 8px;  padding: 4px 12px;}}"
         )
 
         self._build_ui(message, notification_type)

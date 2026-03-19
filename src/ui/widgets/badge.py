@@ -7,9 +7,9 @@ and notification counts.
 
 from __future__ import annotations
 
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter
 from PySide6.QtWidgets import QLabel, QWidget
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFont, QColor, QPainter, QPen, QBrush
 
 
 class Badge(QLabel):

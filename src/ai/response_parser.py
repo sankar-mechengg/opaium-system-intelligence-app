@@ -12,13 +12,14 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Optional, NamedTuple
+from typing import Any, NamedTuple
 
 from loguru import logger
 
 
 class ParsedToolCall(NamedTuple):
     """A parsed tool call from the AI response."""
+
     id: str
     name: str
     arguments: dict[str, Any]
@@ -35,12 +36,12 @@ class ParsedResponse:
     def __init__(
         self,
         text: str = "",
-        tool_calls: Optional[list[ParsedToolCall]] = None,
+        tool_calls: list[ParsedToolCall] | None = None,
         needs_approval: bool = False,
-        approval_plan: Optional[list[str]] = None,
+        approval_plan: list[str] | None = None,
         is_error: bool = False,
         error_message: str = "",
-        raw_response: Optional[dict[str, Any]] = None,
+        raw_response: dict[str, Any] | None = None,
     ) -> None:
         self.text = text
         self.tool_calls = tool_calls or []
@@ -89,11 +90,13 @@ class ResponseParser:
                     except (json.JSONDecodeError, KeyError):
                         args = {}
 
-                    tool_calls.append(ParsedToolCall(
-                        id=tc.get("id", ""),
-                        name=tc["function"]["name"],
-                        arguments=args,
-                    ))
+                    tool_calls.append(
+                        ParsedToolCall(
+                            id=tc.get("id", ""),
+                            name=tc["function"]["name"],
+                            arguments=args,
+                        )
+                    )
 
             # Check if the response contains an approval request
             needs_approval, plan = ResponseParser._detect_approval_request(text)

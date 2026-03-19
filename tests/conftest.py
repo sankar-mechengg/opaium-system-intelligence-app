@@ -8,10 +8,8 @@ sample file structures for all tests.
 from __future__ import annotations
 
 import os
-import json
-import tempfile
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -112,7 +110,7 @@ def old_files(tmp_path: Path) -> Path:
 
     now = datetime.now()
 
-    for i, age_days in enumerate([1, 7, 30, 90, 365, 730]):
+    for _i, age_days in enumerate([1, 7, 30, 90, 365, 730]):
         f = d / f"file_{age_days}d.txt"
         f.write_text(f"File aged {age_days} days")
         mtime = (now - timedelta(days=age_days)).timestamp()
@@ -123,7 +121,7 @@ def old_files(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def mock_config_data() -> dict:
-    """Return a mock configuration dictionary."""
+    """Return overrides compatible with DefaultConfig (Pydantic nested models)."""
     return {
         "appearance": {
             "theme": "dark",
@@ -132,23 +130,6 @@ def mock_config_data() -> dict:
             "show_hidden_folders": False,
         },
         "ai": {
-            "model": "gpt-4.1-mini",
-            "speech_model": "whisper-1",
-            "max_tokens": 2048,
-            "temperature": 0.3,
-        },
-        "refresh": {
-            "auto_refresh_enabled": True,
-            "auto_refresh_interval_min": 5,
-        },
-        "startup": {
-            "start_with_windows": False,
-            "start_minimized": False,
-            "minimize_to_tray": False,
-            "close_to_tray": False,
-        },
-        "undo": {
-            "max_history": 100,
-            "purge_after_days": 7,
+            "ai_model": "gpt-4.1-mini",
         },
     }

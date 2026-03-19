@@ -13,26 +13,26 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import Optional
+from pathlib import Path
 
-from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QVBoxLayout, QSplitter, QFrame,
-)
-from PySide6.QtCore import Qt, Signal
 from loguru import logger
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.config.config_manager import ConfigManager
 from src.core.models import RecentItem
 from src.core.recent_parser import RecentParser
 from src.core.tracking_db import TrackingDB
-from src.core.folder_monitor import FolderMonitor
-from src.ui.explorer.search_bar import SearchBar
-from src.ui.explorer.tree_view import FolderTreeView
 from src.ui.explorer.card_grid_view import CardGridView
 from src.ui.explorer.preview_panel import PreviewPanel
+from src.ui.explorer.search_bar import SearchBar
+from src.ui.explorer.tree_view import FolderTreeView
 from src.ui.widgets.context_menu import ContextMenuBuilder
-from src.utils.thread_pool import Worker, ThreadPoolManager
-from src.utils.time_utils import TimeGroup
+from src.utils.thread_pool import ThreadPoolManager, Worker
 
 
 class ExplorerPanel(QWidget):
@@ -53,7 +53,7 @@ class ExplorerPanel(QWidget):
         self._tracking_db = TrackingDB()
         self._recent_parser = RecentParser(tracking_db=self._tracking_db)
         self._context_menu = ContextMenuBuilder()
-        self._selected_item: Optional[RecentItem] = None
+        self._selected_item: RecentItem | None = None
 
         self._build_ui()
         self._connect_signals()
@@ -143,18 +143,15 @@ class ExplorerPanel(QWidget):
         # Note: Broken links that couldn't be resolved are already filtered out by parser
         if not show_hidden:
             from src.utils.path_utils import PathUtils
+
             for group in grouped:
                 grouped[group] = [
-                    item for item in grouped[group]
-                    if item.exists and not PathUtils.is_system_or_hidden(item.path)
+                    item for item in grouped[group] if item.exists and not PathUtils.is_system_or_hidden(item.path)
                 ]
         else:
             # Only show items that exist
             for group in grouped:
-                grouped[group] = [
-                    item for item in grouped[group]
-                    if item.exists
-                ]
+                grouped[group] = [item for item in grouped[group] if item.exists]
 
         # Track items in DB for future rename detection
         for group_items in grouped.values():
@@ -233,8 +230,7 @@ class ExplorerPanel(QWidget):
 
     def _on_tree_context_menu(self, path: str, pos) -> None:
         """Handle right-click on a tree view folder."""
-        from pathlib import Path as P
-        if P(path).is_dir():
+        if Path(path).is_dir():
             menu = self._context_menu.build_folder_menu(path, self)
         else:
             menu = self._context_menu.build_file_menu(path, self)
@@ -250,9 +246,9 @@ class ExplorerPanel(QWidget):
         try:
             import ctypes
             from ctypes import wintypes
-            
+
             SEE_MASK_INVOKEIDLIST = 0x0000000C
-            
+
             class SHELLEXECUTEINFO(ctypes.Structure):
                 _fields_ = [
                     ("cbSize", wintypes.DWORD),
@@ -278,13 +274,13 @@ class ExplorerPanel(QWidget):
             sei.lpVerb = "properties"
             sei.lpFile = path
             sei.nShow = 1
-            
+
             ctypes.windll.shell32.ShellExecuteExW(ctypes.byref(sei))
             logger.debug(f"Opened properties for: {path}")
         except Exception as e:
             logger.error(f"Failed to show properties: {e}")
 
-    def get_selected_item(self) -> Optional[RecentItem]:
+    def get_selected_item(self) -> RecentItem | None:
         return self._selected_item
 
     def get_selected_path(self) -> str:

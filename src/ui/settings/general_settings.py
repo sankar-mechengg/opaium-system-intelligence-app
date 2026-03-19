@@ -7,11 +7,16 @@ and other general preferences.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox,
-    QGroupBox, QFormLayout,
-)
 from PySide6.QtCore import Signal
+from PySide6.QtWidgets import (
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.config.config_manager import ConfigManager
 from src.ui.widgets.toggle_switch import ToggleSwitch

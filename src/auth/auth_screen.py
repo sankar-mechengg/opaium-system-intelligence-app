@@ -8,21 +8,21 @@ and visual feedback for incorrect entries.
 
 from __future__ import annotations
 
+from loguru import logger
+from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, Qt, Signal
+from PySide6.QtGui import QFont, QKeyEvent, QMouseEvent, QPixmap
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QApplication,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
-    QFrame,
-    QSpacerItem,
     QSizePolicy,
-    QApplication,
+    QSpacerItem,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QPoint
-from PySide6.QtGui import QPixmap, QFont, QKeyEvent, QMouseEvent
-from loguru import logger
 
 from src.auth.auth_manager import AuthManager
 from src.config.config_manager import ConfigManager
@@ -48,7 +48,7 @@ class AuthScreen(QWidget):
         self._config = config
         self._auth_manager = AuthManager(config)
         self._attempts = 0
-        
+
         # For dragging window
         self._drag_position = QPoint()
 
@@ -61,14 +61,13 @@ class AuthScreen(QWidget):
         self.setWindowTitle(f"{AppConstants.APP_NAME} — Locked")
         self.setFixedSize(480, 660)
         self.setWindowFlags(
-            Qt.WindowType.Window
-            | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.FramelessWindowHint
+            Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
-        
+
         # Center the window on screen
         from PySide6.QtWidgets import QApplication
+
         screen = QApplication.primaryScreen().geometry()
         x = (screen.width() - 480) // 2
         y = (screen.height() - 660) // 2
@@ -81,7 +80,6 @@ class AuthScreen(QWidget):
         layout.setSpacing(16)
 
         # === Close button (top-right) ===
-        from PySide6.QtWidgets import QHBoxLayout
         close_row = QHBoxLayout()
         close_row.addStretch()
         self._close_btn = QPushButton("X")
@@ -100,7 +98,8 @@ class AuthScreen(QWidget):
         if logo_path.exists():
             pixmap = QPixmap(str(logo_path))
             scaled = pixmap.scaled(
-                180, 180,
+                180,
+                180,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )
@@ -270,7 +269,7 @@ class AuthScreen(QWidget):
             event.ignore()
         else:
             super().keyPressEvent(event)
-    
+
     def _close_app(self) -> None:
         """Close the application entirely."""
         QApplication.quit()

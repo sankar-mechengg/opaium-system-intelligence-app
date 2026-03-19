@@ -9,14 +9,14 @@ Also provides human-readable time formatting.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 from src.config.constants import AppConstants
 
 
-class TimeGroup(str, Enum):
+class TimeGroup(StrEnum):
     """Time-based grouping categories."""
+
     LAST_2_DAYS = "Last 2 Days"
     LAST_WEEK = "Last Week"
     LAST_MONTH = "Last Month"
@@ -115,7 +115,7 @@ class TimeUtils:
         return [TimeGroup.LAST_2_DAYS, TimeGroup.LAST_WEEK, TimeGroup.LAST_MONTH, TimeGroup.OLDER]
 
     @staticmethod
-    def parse_timestamp(value: Optional[float]) -> Optional[datetime]:
+    def parse_timestamp(value: float | None) -> datetime | None:
         """
         Safely parse a Unix timestamp.
 

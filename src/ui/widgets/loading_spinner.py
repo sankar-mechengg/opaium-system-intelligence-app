@@ -7,11 +7,9 @@ scanning, API calls, and other async operations.
 
 from __future__ import annotations
 
-import math
-
+from PySide6.QtCore import QRectF, QSize, Qt, QTimer
+from PySide6.QtGui import QColor, QConicalGradient, QPainter, QPen
 from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, QTimer, QSize, QRectF
-from PySide6.QtGui import QPainter, QColor, QPen, QConicalGradient
 
 
 class LoadingSpinner(QWidget):

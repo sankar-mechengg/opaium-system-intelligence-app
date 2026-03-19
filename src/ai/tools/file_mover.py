@@ -20,7 +20,6 @@ from src.core.models import OperationRecord
 
 
 class FileMoverTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "move_files"
@@ -78,6 +77,7 @@ class FileMoverTool(BaseTool):
             return ToolResult(success=False, message="No files match the criteria.")
 
         from src.utils.path_utils import PathUtils
+
         total_size = sum(os.path.getsize(f) for f in files if os.path.exists(f))
 
         preview_lines = [

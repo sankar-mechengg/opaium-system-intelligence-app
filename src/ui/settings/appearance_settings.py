@@ -7,12 +7,17 @@ and other visual preferences.
 
 from __future__ import annotations
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QSpinBox, QGroupBox, QFormLayout,
+    QComboBox,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
 
 from src.config.config_manager import ConfigManager
 from src.ui.widgets.toggle_switch import ToggleSwitch
@@ -89,7 +94,7 @@ class AppearanceSettings(QWidget):
         """Load current settings into UI."""
         settings = self._config.settings.appearance
         # Get theme value (handle both enum and string)
-        theme_value = settings.theme.value if hasattr(settings.theme, 'value') else str(settings.theme)
+        theme_value = settings.theme.value if hasattr(settings.theme, "value") else str(settings.theme)
         self._theme_combo.setCurrentText(theme_value.capitalize())
         self._card_width.setValue(settings.card_width)
         self._card_height.setValue(settings.card_height)
@@ -111,6 +116,7 @@ class AppearanceSettings(QWidget):
     def save(self) -> None:
         """Save current UI values to config."""
         from src.config.defaults import ThemeMode
+
         # Convert string to enum
         theme_str = self._theme_combo.currentText().lower()
         theme_enum = ThemeMode.LIGHT if theme_str == "light" else ThemeMode.DARK

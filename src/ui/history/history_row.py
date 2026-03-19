@@ -7,13 +7,16 @@ operation type, description, timestamp, and undo button.
 
 from __future__ import annotations
 
-from datetime import datetime
-
-from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QWidget,
-)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.core.models import OperationRecord
 from src.utils.time_utils import TimeUtils

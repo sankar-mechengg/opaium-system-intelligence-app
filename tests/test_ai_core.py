@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
-from src.ai.tools.base_tool import BaseTool, ToolResult
-from src.ai.function_registry import FunctionRegistry
 from src.ai.conversation_manager import ConversationManager
+from src.ai.function_registry import FunctionRegistry
+from src.ai.tools.base_tool import BaseTool, ToolResult
 
 
 class MockTool(BaseTool):
@@ -38,7 +36,6 @@ class MockTool(BaseTool):
 
 
 class TestToolResult:
-
     def test_success_result(self):
         r = ToolResult(success=True, message="OK")
         assert r.success is True
@@ -64,7 +61,6 @@ class TestToolResult:
 
 
 class TestBaseTool:
-
     def test_mock_tool_properties(self):
         tool = MockTool()
         assert tool.name == "mock_tool"
@@ -97,67 +93,78 @@ class TestBaseTool:
 
 
 class TestFunctionRegistry:
+    def _register_mock(self, registry: FunctionRegistry) -> None:
+        tool = MockTool()
+        registry.register(
+            name=tool.name,
+            description=tool.description,
+            parameters=tool.parameters,
+            handler=tool.execute,
+        )
 
     def test_register_and_get(self):
         registry = FunctionRegistry()
-        tool = MockTool()
-        registry.register(tool)
-        assert registry.get("mock_tool") is tool
+        self._register_mock(registry)
+        td = registry.get_tool("mock_tool")
+        assert td is not None
+        assert td.name == "mock_tool"
 
     def test_get_nonexistent(self):
         registry = FunctionRegistry()
-        assert registry.get("nonexistent") is None
+        assert registry.get_tool("nonexistent") is None
 
-    def test_get_all_tools(self):
+    def test_get_all_schemas(self):
         registry = FunctionRegistry()
-        registry.register(MockTool())
-        tools = registry.get_all_tools()
-        assert len(tools) >= 1
+        self._register_mock(registry)
+        schemas = registry.get_all_schemas()
+        assert len(schemas) >= 1
 
-    def test_get_openai_functions(self):
+    def test_get_openai_functions_shape(self):
         registry = FunctionRegistry()
-        registry.register(MockTool())
-        functions = registry.get_openai_functions()
-        assert len(functions) >= 1
-        assert functions[0]["type"] == "function"
+        self._register_mock(registry)
+        schemas = registry.get_all_schemas()
+        assert schemas[0]["type"] == "function"
 
     def test_duplicate_registration(self):
         registry = FunctionRegistry()
-        registry.register(MockTool())
-        registry.register(MockTool())  # Should overwrite
-        assert len([t for t in registry.get_all_tools() if t.name == "mock_tool"]) == 1
+        self._register_mock(registry)
+        self._register_mock(registry)
+        assert registry.tool_count == 1
 
 
 class TestConversationManager:
-
     def test_add_and_get_messages(self):
         conv = ConversationManager()
+        conv.set_system_prompt("You are a test assistant.")
         conv.add_user_message("Hello")
         conv.add_assistant_message("Hi there!")
 
-        messages = conv.get_messages()
-        assert len(messages) >= 2  # system + user + assistant
+        messages = conv.get_api_messages()
+        assert len(messages) >= 3
 
     def test_system_message_exists(self):
         conv = ConversationManager()
-        messages = conv.get_messages()
+        conv.set_system_prompt("System here.")
+        messages = conv.get_api_messages()
         assert any(m["role"] == "system" for m in messages)
 
     def test_clear(self):
         conv = ConversationManager()
+        conv.set_system_prompt("sys")
         conv.add_user_message("test")
         conv.clear()
-        messages = conv.get_messages()
-        # Should only have system message
+        messages = conv.get_api_messages()
         assert len(messages) == 1
+        assert messages[0]["role"] == "system"
 
     def test_message_order(self):
         conv = ConversationManager()
+        conv.set_system_prompt("s")
         conv.add_user_message("Q1")
         conv.add_assistant_message("A1")
         conv.add_user_message("Q2")
 
-        messages = conv.get_messages()
+        messages = conv.get_api_messages()
         roles = [m["role"] for m in messages]
         assert roles == ["system", "user", "assistant", "user"]
 
@@ -165,6 +172,5 @@ class TestConversationManager:
         conv = ConversationManager()
         for i in range(50):
             conv.add_user_message(f"Message {i} " * 50)
-        # Should truncate older messages to stay within limits
-        messages = conv.get_messages()
-        assert len(messages) < 55  # Some messages should be trimmed
+        messages = conv.get_api_messages()
+        assert len(messages) < 55

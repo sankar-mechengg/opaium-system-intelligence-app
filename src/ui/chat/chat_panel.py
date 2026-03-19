@@ -11,33 +11,33 @@ Main AI chat interface combining:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame, QLabel,
-    QSizePolicy, QSplitter,
-)
-from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QFont
 from loguru import logger
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.ai.ai_engine import AIEngine
-from src.ai.conversation_manager import ConversationManager
 from src.ai.conversation_db import ConversationDB
+from src.ai.conversation_manager import ConversationManager
 from src.ai.speech_recorder import SpeechRecorder
 from src.ai.speech_transcriber import SpeechTranscriber
 from src.config.config_manager import ConfigManager
-from src.ui.chat.message_bubble import ChatMessage, MessageBubble, MessageRole
 from src.ui.chat.chat_input import ChatInputBar
-from src.ui.chat.typing_indicator import TypingIndicator
-from src.ui.chat.quick_actions import QuickActionChips
-from src.ui.chat.tool_result_widget import ToolResultWidget
-from src.ui.chat.approval_dialog import ApprovalDialog
 from src.ui.chat.context_card import ChatContextCard
 from src.ui.chat.conversations_sidebar import ConversationsSidebar
-from src.undo.undo_manager import UndoManager
+from src.ui.chat.message_bubble import ChatMessage, MessageBubble, MessageRole
+from src.ui.chat.quick_actions import QuickActionChips
+from src.ui.chat.typing_indicator import TypingIndicator
 from src.undo.operation_journal import OperationJournal
-from src.utils.thread_pool import Worker, ThreadPoolManager
+from src.undo.undo_manager import UndoManager
 
 
 class ChatPanel(QWidget):
@@ -65,12 +65,12 @@ class ChatPanel(QWidget):
         self._operation_journal = operation_journal
         self._conversation = ConversationManager()
         self._conversation_db = ConversationDB()
-        self._ai_engine: Optional[AIEngine] = None
-        self._speech_recorder: Optional[SpeechRecorder] = None
-        self._speech_transcriber: Optional[SpeechTranscriber] = None
+        self._ai_engine: AIEngine | None = None
+        self._speech_recorder: SpeechRecorder | None = None
+        self._speech_transcriber: SpeechTranscriber | None = None
         self._pending_context: str = ""
         self._current_folder: str = ""
-        self._current_conversation_id: Optional[int] = None
+        self._current_conversation_id: int | None = None
 
         self._build_ui()
         self._connect_signals()
@@ -173,9 +173,7 @@ class ChatPanel(QWidget):
                 logger.info("AI engine initialized.")
             except Exception as e:
                 logger.error(f"Failed to initialize AI engine: {e}")
-                self._add_system_message(
-                    "AI engine could not be initialized. Check your API key in Settings."
-                )
+                self._add_system_message("AI engine could not be initialized. Check your API key in Settings.")
         else:
             self._add_system_message(
                 "No API key configured. Please add your OpenAI API key in Settings to enable AI features."
@@ -232,7 +230,7 @@ class ChatPanel(QWidget):
         self._add_system_message(f"Executing: {tool_name}...")
 
     def _on_approval_needed(self, description: str, plan_steps: list) -> None:
-        plan_text = "\n".join(f"  {i+1}. {step}" for i, step in enumerate(plan_steps))
+        plan_text = "\n".join(f"  {i + 1}. {step}" for i, step in enumerate(plan_steps))
         message = f"{description}\n\nPlan:\n{plan_text}\n\nType 'yes' to proceed or 'no' to cancel."
         self._add_system_message(message)
 
@@ -332,9 +330,10 @@ class ChatPanel(QWidget):
 
     def _scroll_to_bottom(self) -> None:
         """Scroll chat to the bottom after layout updates."""
-        QTimer.singleShot(50, lambda: self._scroll.verticalScrollBar().setValue(
-            self._scroll.verticalScrollBar().maximum()
-        ))
+        QTimer.singleShot(
+            50,
+            lambda: self._scroll.verticalScrollBar().setValue(self._scroll.verticalScrollBar().maximum()),
+        )
 
     def _clear_chat(self) -> None:
         """Clear all messages from the chat UI."""
@@ -406,17 +405,13 @@ class ChatPanel(QWidget):
         if context_msg:
             self._add_system_message(context_msg)
         else:
-            self._add_system_message(
-                "New conversation started. How can I help?"
-            )
+            self._add_system_message("New conversation started. How can I help?")
 
     def set_folder_context(self, folder_path: str) -> None:
         """Update the folder context for AI. If a new folder, start new chat."""
         if folder_path != self._current_folder and self._current_folder:
             folder_name = Path(folder_path).name if folder_path else "folder"
-            self._start_new_chat(
-                f"Switched context to: {folder_name}. How can I help with this folder?"
-            )
+            self._start_new_chat(f"Switched context to: {folder_name}. How can I help with this folder?")
 
         self._current_folder = folder_path
         self._pending_context = folder_path
@@ -426,9 +421,7 @@ class ChatPanel(QWidget):
 
         # Update current conversation's folder
         if self._current_conversation_id is not None:
-            self._conversation_db.update_conversation(
-                self._current_conversation_id, folder_path=folder_path
-            )
+            self._conversation_db.update_conversation(self._current_conversation_id, folder_path=folder_path)
 
     def inject_ai_question(self, question: str, path: str) -> None:
         """Inject a question from the context menu with context card."""

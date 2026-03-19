@@ -7,10 +7,11 @@ Qt-based worker classes for running long operations
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
 from loguru import logger
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
 
 
 class WorkerSignals(QObject):
@@ -117,7 +118,7 @@ class ThreadPoolManager:
     Wraps QThreadPool for easy task submission.
     """
 
-    _pool: Optional[QThreadPool] = None
+    _pool: QThreadPool | None = None
 
     @classmethod
     def pool(cls) -> QThreadPool:
@@ -125,9 +126,7 @@ class ThreadPoolManager:
         if cls._pool is None:
             cls._pool = QThreadPool.globalInstance()
             cls._pool.setMaxThreadCount(8)
-            logger.debug(
-                f"Thread pool initialized. Max threads: {cls._pool.maxThreadCount()}"
-            )
+            logger.debug(f"Thread pool initialized. Max threads: {cls._pool.maxThreadCount()}")
         return cls._pool
 
     @classmethod

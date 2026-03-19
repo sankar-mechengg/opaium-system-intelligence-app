@@ -16,7 +16,7 @@ from src.ai.function_registry import FunctionRegistry
 from src.ai.tools.base_tool import ToolResult
 from src.core.models import OperationRecord
 from src.undo.operation_journal import OperationJournal
-from src.undo.operation_models import Operation, OperationType, FileMapping
+from src.undo.operation_models import FileMapping, Operation, OperationType
 
 
 class ToolExecutorWithJournal:
@@ -57,21 +57,25 @@ class ToolExecutorWithJournal:
                 if not new_name and dest:
                     new_name = Path(dest).name
 
-                mappings.append(FileMapping(
-                    source=source,
-                    destination=dest,
-                    original_name=orig,
-                    new_name=new_name,
-                ))
+                mappings.append(
+                    FileMapping(
+                        source=source,
+                        destination=dest,
+                        original_name=orig,
+                        new_name=new_name,
+                    )
+                )
 
             if not mappings and record.dest_paths:
                 for path in record.dest_paths:
-                    mappings.append(FileMapping(
-                        source="",
-                        destination=path,
-                        original_name="",
-                        new_name=Path(path).name,
-                    ))
+                    mappings.append(
+                        FileMapping(
+                            source="",
+                            destination=path,
+                            original_name="",
+                            new_name=Path(path).name,
+                        )
+                    )
 
             operation = Operation(
                 timestamp=record.timestamp,

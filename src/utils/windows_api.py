@@ -7,11 +7,11 @@ for resolving shortcuts, getting file attributes, and system info.
 
 from __future__ import annotations
 
-import os
+import contextlib
 import ctypes
 import ctypes.wintypes
+import os
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
@@ -20,7 +20,7 @@ class WindowsAPI:
     """Windows-specific API wrappers."""
 
     @staticmethod
-    def resolve_lnk_target(lnk_path: str | Path) -> Optional[str]:
+    def resolve_lnk_target(lnk_path: str | Path) -> str | None:
         """
         Resolve a .lnk shortcut file to its target path using COM Shell API.
 
@@ -70,7 +70,7 @@ class WindowsAPI:
             return WindowsAPI._resolve_lnk_fallback(lnk_path)
 
     @staticmethod
-    def _resolve_lnk_fallback(lnk_path: str | Path) -> Optional[str]:
+    def _resolve_lnk_fallback(lnk_path: str | Path) -> str | None:
         """Fallback .lnk resolution using pylnk3."""
         try:
             import pylnk3
@@ -91,7 +91,7 @@ class WindowsAPI:
             return None
 
     @staticmethod
-    def get_file_attributes(path: str | Path) -> Optional[int]:
+    def get_file_attributes(path: str | Path) -> int | None:
         """
         Get Windows file attributes for a path.
 
@@ -121,7 +121,7 @@ class WindowsAPI:
         return False
 
     @staticmethod
-    def get_file_id(path: str | Path) -> Optional[int]:
+    def get_file_id(path: str | Path) -> int | None:
         """
         Get the NTFS file ID (unique within a volume).
 
@@ -184,7 +184,7 @@ class WindowsAPI:
             return None
 
     @staticmethod
-    def get_volume_serial(path: str | Path) -> Optional[int]:
+    def get_volume_serial(path: str | Path) -> int | None:
         """
         Get the volume serial number for the drive containing this path.
 
@@ -199,10 +199,13 @@ class WindowsAPI:
             serial = ctypes.wintypes.DWORD()
             result = ctypes.windll.kernel32.GetVolumeInformationW(  # type: ignore[union-attr]
                 drive,
-                None, 0,
+                None,
+                0,
                 ctypes.byref(serial),
-                None, None,
-                None, 0,
+                None,
+                None,
+                None,
+                0,
             )
             return serial.value if result else None
         except Exception:
@@ -248,10 +251,8 @@ class WindowsAPI:
                 0,
                 winreg.KEY_SET_VALUE,
             )
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 winreg.DeleteValue(key, "OPAIUM")
-            except FileNotFoundError:
-                pass
             winreg.CloseKey(key)
             logger.info("Removed from Windows startup.")
             return True

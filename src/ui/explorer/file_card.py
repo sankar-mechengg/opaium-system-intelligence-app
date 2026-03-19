@@ -7,18 +7,17 @@ Shows file icon, name, size, and access time.
 
 from __future__ import annotations
 
+import contextlib
 import os
-import subprocess
-from pathlib import Path
 
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QLabel, QWidget
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QFont, QMouseEvent
+from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
-from src.core.models import RecentItem
-from src.utils.time_utils import TimeUtils
-from src.utils.path_utils import PathUtils
 from src.config.constants import AppConstants
+from src.core.models import RecentItem
+from src.utils.path_utils import PathUtils
+from src.utils.time_utils import TimeUtils
 
 
 class FileCard(QFrame):
@@ -65,6 +64,7 @@ class FileCard(QFrame):
         icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         from src.utils.icon_provider import IconProvider
+
         provider = IconProvider()
         icon = provider.get_file_icon(self._item.path)
         pixmap = icon.pixmap(QSize(40, 40))
@@ -138,7 +138,5 @@ class FileCard(QFrame):
         if event.button() == Qt.MouseButton.LeftButton:
             self.double_clicked.emit(self._item)
             if self._item.exists:
-                try:
+                with contextlib.suppress(Exception):
                     os.startfile(self._item.path)  # type: ignore[attr-defined]
-                except Exception:
-                    pass

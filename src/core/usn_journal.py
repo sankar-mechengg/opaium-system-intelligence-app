@@ -16,14 +16,14 @@ import ctypes.wintypes
 import struct
 from datetime import datetime, timedelta
 from enum import IntFlag
-from pathlib import Path
-from typing import Optional, NamedTuple
+from typing import NamedTuple
 
 from loguru import logger
 
 
 class USNReason(IntFlag):
     """USN Journal change reasons."""
+
     DATA_OVERWRITE = 0x00000001
     DATA_EXTEND = 0x00000002
     DATA_TRUNCATION = 0x00000004
@@ -49,6 +49,7 @@ class USNReason(IntFlag):
 
 class USNRecord(NamedTuple):
     """A parsed USN Journal record."""
+
     file_reference_number: int
     parent_file_reference_number: int
     usn: int
@@ -115,8 +116,8 @@ class USNJournalReader:
         """
         self._drive = drive_letter.upper()
         self._volume_path = f"\\\\.\\{self._drive}:"
-        self._available: Optional[bool] = None
-        self._handle: Optional[int] = None
+        self._available: bool | None = None
+        self._handle: int | None = None
 
     @property
     def is_available(self) -> bool:
@@ -213,7 +214,7 @@ class USNJournalReader:
         except Exception:
             return False
 
-    def _open_volume(self) -> Optional[int]:
+    def _open_volume(self) -> int | None:
         """Open a handle to the volume."""
         try:
             GENERIC_READ = 0x80000000
@@ -240,7 +241,7 @@ class USNJournalReader:
             logger.debug(f"Failed to open volume: {e}")
             return None
 
-    def _query_journal(self, handle: int) -> Optional[tuple[int, int, int]]:
+    def _query_journal(self, handle: int) -> tuple[int, int, int] | None:
         """Query USN Journal metadata."""
         try:
             output_buffer = ctypes.create_string_buffer(64)
@@ -249,8 +250,10 @@ class USNJournalReader:
             result = ctypes.windll.kernel32.DeviceIoControl(
                 handle,
                 self.FSCTL_QUERY_USN_JOURNAL,
-                None, 0,
-                output_buffer, 64,
+                None,
+                0,
+                output_buffer,
+                64,
                 ctypes.byref(bytes_returned),
                 None,
             )
@@ -283,12 +286,12 @@ class USNJournalReader:
             # READ_USN_JOURNAL_DATA_V0 structure
             input_buffer = struct.pack(
                 "<qIIIQq",
-                start_usn,      # StartUsn
-                0xFFFFFFFF,     # ReasonMask (all reasons)
-                0,              # ReturnOnlyOnClose
-                0,              # Timeout
-                journal_id,     # UsnJournalID
-                0,              # MinMajorVersion (not used in V0)
+                start_usn,  # StartUsn
+                0xFFFFFFFF,  # ReasonMask (all reasons)
+                0,  # ReturnOnlyOnClose
+                0,  # Timeout
+                journal_id,  # UsnJournalID
+                0,  # MinMajorVersion (not used in V0)
             )
 
             output_buffer = ctypes.create_string_buffer(BUFFER_SIZE)
@@ -302,15 +305,18 @@ class USNJournalReader:
                     "<qIIIQ",
                     current_usn,
                     0xFFFFFFFF,
-                    0, 0,
+                    0,
+                    0,
                     journal_id,
                 )
 
                 result = ctypes.windll.kernel32.DeviceIoControl(
                     handle,
                     self.FSCTL_READ_USN_JOURNAL,
-                    input_buffer, len(input_buffer),
-                    output_buffer, BUFFER_SIZE,
+                    input_buffer,
+                    len(input_buffer),
+                    output_buffer,
+                    BUFFER_SIZE,
                     ctypes.byref(bytes_returned),
                     None,
                 )
@@ -319,7 +325,7 @@ class USNJournalReader:
                     break
 
                 # First 8 bytes: next USN
-                data = output_buffer.raw[:bytes_returned.value]
+                data = output_buffer.raw[: bytes_returned.value]
                 next_usn = struct.unpack_from("<q", data, 0)[0]
 
                 # Parse records starting at offset 8
@@ -347,7 +353,7 @@ class USNJournalReader:
 
         return records
 
-    def _parse_record(self, data: bytes, offset: int) -> Optional[USNRecord]:
+    def _parse_record(self, data: bytes, offset: int) -> USNRecord | None:
         """Parse a single USN_RECORD_V2 from buffer."""
         try:
             if offset + 60 > len(data):
@@ -375,8 +381,8 @@ class USNJournalReader:
                 timestamp = datetime.now()
 
             reason = struct.unpack_from("<I", data, offset + 40)[0]
-            source_info = struct.unpack_from("<I", data, offset + 44)[0]
-            security_id = struct.unpack_from("<I", data, offset + 48)[0]
+            struct.unpack_from("<I", data, offset + 44)[0]
+            struct.unpack_from("<I", data, offset + 48)[0]
             file_attributes = struct.unpack_from("<I", data, offset + 52)[0]
             filename_length = struct.unpack_from("<H", data, offset + 56)[0]
             filename_offset = struct.unpack_from("<H", data, offset + 58)[0]

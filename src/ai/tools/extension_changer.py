@@ -18,7 +18,6 @@ from src.core.models import OperationRecord
 
 
 class ExtensionChangerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "change_extensions"
@@ -75,8 +74,10 @@ class ExtensionChangerTool(BaseTool):
             lines.append(f"  ... and {len(files) - 15} more")
 
         return ToolResult(
-            success=True, message=f"Ready to change {len(files)} extensions",
-            requires_approval=True, preview=lines,
+            success=True,
+            message=f"Ready to change {len(files)} extensions",
+            requires_approval=True,
+            preview=lines,
         )
 
     def execute(self, **kwargs: Any) -> ToolResult:

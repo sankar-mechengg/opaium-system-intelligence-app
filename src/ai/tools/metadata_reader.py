@@ -12,14 +12,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from loguru import logger
-
 from src.ai.tools.base_tool import BaseTool, ToolResult
 from src.utils.path_utils import PathUtils
 
 
 class MetadataReaderTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "read_metadata"
@@ -130,6 +127,7 @@ class MetadataReaderTool(BaseTool):
         # Hash
         if include_hash:
             from src.core.file_scanner import FileScanner
+
             file_hash = FileScanner.get_file_hash(fpath)
             if file_hash:
                 meta["md5"] = file_hash
@@ -140,6 +138,7 @@ class MetadataReaderTool(BaseTool):
         """Get image dimensions using PIL."""
         try:
             from PIL import Image
+
             with Image.open(fpath) as img:
                 return img.size
         except Exception:

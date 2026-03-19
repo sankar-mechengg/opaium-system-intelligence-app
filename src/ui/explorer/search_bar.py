@@ -7,11 +7,15 @@ Supports instant filtering as-you-type with debounce.
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QLineEdit, QPushButton, QComboBox,
+    QComboBox,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QWidget,
 )
-from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QFont, QIcon
 
 from src.ui.widgets.loading_spinner import LoadingSpinner
 
@@ -63,17 +67,19 @@ class SearchBar(QWidget):
         self._type_filter.setObjectName("typeFilter")
         self._type_filter.setMinimumHeight(36)
         self._type_filter.setMinimumWidth(130)
-        self._type_filter.addItems([
-            "All Items",
-            "Folders Only",
-            "Files Only",
-            "Images",
-            "Documents",
-            "Videos",
-            "Audio",
-            "Archives",
-            "Code",
-        ])
+        self._type_filter.addItems(
+            [
+                "All Items",
+                "Folders Only",
+                "Files Only",
+                "Images",
+                "Documents",
+                "Videos",
+                "Audio",
+                "Archives",
+                "Code",
+            ]
+        )
         layout.addWidget(self._type_filter)
 
         # Refresh button

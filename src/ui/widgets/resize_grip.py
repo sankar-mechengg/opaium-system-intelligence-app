@@ -7,9 +7,9 @@ Placed at window edges/corners, they change cursor and handle resize drag.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, QPoint, QRect
+from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtGui import QMouseEvent
+from PySide6.QtWidgets import QWidget
 
 
 class ResizeGrip(QWidget):
@@ -69,7 +69,12 @@ class ResizeGrip(QWidget):
             if not win:
                 return
             delta = event.globalPosition().toPoint() - self._start_pos
-            x, y, w, h = self._start_geo.x(), self._start_geo.y(), self._start_geo.width(), self._start_geo.height()
+            x, y, w, h = (
+                self._start_geo.x(),
+                self._start_geo.y(),
+                self._start_geo.width(),
+                self._start_geo.height(),
+            )
 
             if "left" in self._edge:
                 x += delta.x()

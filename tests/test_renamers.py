@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
-import pytest
-
-from src.ai.tools.regex_renamer import RegexRenamerTool
 from src.ai.tools.extension_changer import ExtensionChangerTool
+from src.ai.tools.regex_renamer import RegexRenamerTool
 
 
 class TestRegexRenamerTool:
-
     def setup_method(self):
         self.tool = RegexRenamerTool()
 
@@ -70,7 +66,6 @@ class TestRegexRenamerTool:
 
 
 class TestExtensionChangerTool:
-
     def setup_method(self):
         self.tool = ExtensionChangerTool()
 
@@ -83,7 +78,8 @@ class TestExtensionChangerTool:
 
         result = self.tool.execute(directory=str(d), from_ext="jpeg", to_ext="jpg")
         assert result.success is True
-        assert result.data["succeeded"] == 2
+        assert result.operation is not None
+        assert len(result.operation.source_paths) == 2
         assert (d / "file1.jpg").exists()
         assert (d / "file2.jpg").exists()
         assert (d / "file3.png").exists()  # Unchanged

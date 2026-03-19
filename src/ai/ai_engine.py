@@ -15,19 +15,19 @@ This is the single entry point the UI chat widget talks to.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
-from PySide6.QtCore import QObject, Signal
 from loguru import logger
+from PySide6.QtCore import QObject, Signal
 
-from src.ai.openai_client import OpenAIClient
+from src.ai.conversation_manager import ConversationManager
 from src.ai.function_registry import FunctionRegistry
-from src.ai.tool_executor import ToolExecutorWithJournal
-from src.ai.conversation_manager import ConversationManager, ChatMessage
+from src.ai.openai_client import OpenAIClient
 from src.ai.prompt_builder import PromptBuilder
-from src.ai.response_parser import ResponseParser, ParsedResponse
+from src.ai.response_parser import ParsedResponse, ResponseParser
 from src.ai.speech_recorder import SpeechRecorder
 from src.ai.speech_transcriber import SpeechTranscriber
+from src.ai.tool_executor import ToolExecutorWithJournal
 from src.config.config_manager import ConfigManager
 from src.undo.operation_journal import OperationJournal
 
@@ -46,8 +46,8 @@ class AIEngine(QObject):
         error: Emitted on errors (error message).
     """
 
-    response_ready = Signal(object)      # ParsedResponse
-    tool_executing = Signal(str)         # tool name
+    response_ready = Signal(object)  # ParsedResponse
+    tool_executing = Signal(str)  # tool name
     approval_needed = Signal(str, list)  # description, plan steps
     thinking_started = Signal()
     thinking_finished = Signal()
@@ -58,7 +58,7 @@ class AIEngine(QObject):
         self,
         config: ConfigManager,
         operation_journal: OperationJournal,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._config = config
@@ -72,11 +72,11 @@ class AIEngine(QObject):
         self._transcriber = SpeechTranscriber(self._client, self)
 
         # State
-        self._selected_folder: Optional[str] = None
+        self._selected_folder: str | None = None
         self._selected_files: list[str] = []
         self._scan_mode: str = "shallow"
         self._is_processing = False
-        self._pending_approval_action: Optional[dict[str, Any]] = None
+        self._pending_approval_action: dict[str, Any] | None = None
 
         # Connect speech signals
         self._recorder.transcription_ready.connect(self._on_recording_ready)
@@ -110,7 +110,7 @@ class AIEngine(QObject):
     def recorder(self) -> SpeechRecorder:
         return self._recorder
 
-    def set_selected_folder(self, folder_path: Optional[str]) -> None:
+    def set_selected_folder(self, folder_path: str | None) -> None:
         """Update the currently selected folder context."""
         self._selected_folder = folder_path
         self._update_system_prompt()
@@ -160,7 +160,7 @@ class AIEngine(QObject):
         self._is_processing = True
         self.thinking_started.emit()
 
-        from src.utils.thread_pool import Worker, ThreadPoolManager
+        from src.utils.thread_pool import ThreadPoolManager, Worker
 
         worker = Worker(self._execute_ai_request)
         worker.signals.result.connect(self._on_ai_response)
@@ -183,7 +183,11 @@ class AIEngine(QObject):
 
     def _on_ai_response(self, raw_response: object) -> None:
         """Handle AI response from the background thread."""
-        response = dict(raw_response) if isinstance(raw_response, dict) else {"message": {"content": str(raw_response), "tool_calls": None}}
+        response = (
+            dict(raw_response)
+            if isinstance(raw_response, dict)
+            else {"message": {"content": str(raw_response), "tool_calls": None}}
+        )
         parsed = ResponseParser.parse(response)
 
         # Add assistant message to conversation (format tool_calls for OpenAI API)
@@ -232,7 +236,15 @@ class AIEngine(QObject):
 
     def _handle_approval_response(self, text: str) -> None:
         """Handle user's yes/no response to an approval request."""
-        affirmative = text.strip().lower() in ("yes", "y", "approve", "ok", "go", "do it", "proceed")
+        affirmative = text.strip().lower() in (
+            "yes",
+            "y",
+            "approve",
+            "ok",
+            "go",
+            "do it",
+            "proceed",
+        )
 
         if affirmative:
             self._conversation.add_user_message("Yes, proceed with the operation.")

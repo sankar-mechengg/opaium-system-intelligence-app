@@ -7,6 +7,7 @@ filtering by extension, size, and age.
 
 from __future__ import annotations
 
+import contextlib
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -16,7 +17,6 @@ from src.ai.tools.base_tool import BaseTool, ToolResult
 
 
 class FileCounterTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "count_files"
@@ -89,14 +89,10 @@ class FileCounterTool(BaseTool):
                         fpath = os.path.join(dirpath, fname)
                         total_files += 1
 
-                        if self._matches_filter(
-                            fpath, fname, extension, min_size_bytes, cutoff_time
-                        ):
+                        if self._matches_filter(fpath, fname, extension, min_size_bytes, cutoff_time):
                             matched_files += 1
-                            try:
+                            with contextlib.suppress(OSError):
                                 total_size += os.path.getsize(fpath)
-                            except OSError:
-                                pass
 
                         ext = Path(fname).suffix.lstrip(".").lower() or "(no ext)"
                         type_breakdown[ext] = type_breakdown.get(ext, 0) + 1
@@ -108,14 +104,15 @@ class FileCounterTool(BaseTool):
                         elif entry.is_file(follow_symlinks=False):
                             total_files += 1
                             if self._matches_filter(
-                                entry.path, entry.name, extension,
-                                min_size_bytes, cutoff_time,
+                                entry.path,
+                                entry.name,
+                                extension,
+                                min_size_bytes,
+                                cutoff_time,
                             ):
                                 matched_files += 1
-                                try:
+                                with contextlib.suppress(OSError):
                                     total_size += entry.stat().st_size
-                                except OSError:
-                                    pass
 
                             ext = Path(entry.name).suffix.lstrip(".").lower() or "(no ext)"
                             type_breakdown[ext] = type_breakdown.get(ext, 0) + 1
@@ -126,11 +123,10 @@ class FileCounterTool(BaseTool):
             return ToolResult(success=False, message=f"Error scanning directory: {e}")
 
         # Sort breakdown by count
-        sorted_breakdown = dict(
-            sorted(type_breakdown.items(), key=lambda x: x[1], reverse=True)
-        )
+        sorted_breakdown = dict(sorted(type_breakdown.items(), key=lambda x: x[1], reverse=True))
 
         from src.utils.path_utils import PathUtils
+
         has_filter = bool(extension or min_size_bytes or cutoff_time)
 
         data = {

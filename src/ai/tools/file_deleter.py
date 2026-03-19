@@ -20,7 +20,6 @@ from src.core.models import OperationRecord
 
 
 class FileDeleterTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "delete_files"
@@ -75,11 +74,11 @@ class FileDeleterTool(BaseTool):
             return ToolResult(success=False, message="No files match the criteria.")
 
         from src.utils.path_utils import PathUtils
+
         total_size = sum(os.path.getsize(f) for f in files if os.path.exists(f))
 
         preview_lines = [
-            f"Will delete {len(files)} file(s) to Recycle Bin "
-            f"({PathUtils.format_size(total_size)} total):",
+            f"Will delete {len(files)} file(s) to Recycle Bin ({PathUtils.format_size(total_size)} total):",
         ]
 
         for f in files[:20]:
@@ -157,6 +156,7 @@ class FileDeleterTool(BaseTool):
                     targets.append(fpath)
         else:
             from datetime import timedelta
+
             cutoff = None
             if older_than_days:
                 cutoff = datetime.now() - timedelta(days=older_than_days)

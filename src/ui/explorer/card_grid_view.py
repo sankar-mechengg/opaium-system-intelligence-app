@@ -7,19 +7,18 @@ grouped by time periods (Last 2 Days, Last Week, Last Month).
 
 from __future__ import annotations
 
-from typing import Optional
-
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QScrollArea, QFrame, QLabel,
-    QSizePolicy,
-)
-from PySide6.QtCore import Qt, Signal
 from loguru import logger
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QFrame,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
-from src.core.models import RecentItem, ItemType
-from src.ui.explorer.folder_card import FolderCard
+from src.core.models import RecentItem
 from src.ui.explorer.file_card import FileCard
-from src.ui.explorer.group_header import GroupHeader
+from src.ui.explorer.folder_card import FolderCard
 from src.ui.widgets.collapsible_section import CollapsibleSection
 from src.utils.time_utils import TimeGroup, TimeUtils
 
@@ -98,7 +97,7 @@ class CardGridView(QWidget):
         super().__init__(parent)
         self._sections: dict[TimeGroup, tuple[CollapsibleSection, FlowLayout]] = {}
         self._all_cards: list[FolderCard | FileCard] = []
-        self._selected_card: Optional[FolderCard | FileCard] = None
+        self._selected_card: FolderCard | FileCard | None = None
 
         self._build_ui()
 
@@ -177,9 +176,12 @@ class CardGridView(QWidget):
 
             # Type filter
             if visible and type_filter != "All Items":
-                if type_filter == "Folders Only" and not item.is_folder:
-                    visible = False
-                elif type_filter == "Files Only" and not item.is_file:
+                if (
+                    type_filter == "Folders Only"
+                    and not item.is_folder
+                    or type_filter == "Files Only"
+                    and not item.is_file
+                ):
                     visible = False
                 elif type_filter in ("Images", "Documents", "Videos", "Audio", "Archives", "Code"):
                     visible = self._matches_type_filter(item, type_filter)
@@ -210,10 +212,7 @@ class CardGridView(QWidget):
 
     def _create_card(self, item: RecentItem) -> FolderCard | FileCard:
         """Create the appropriate card widget for an item."""
-        if item.is_folder:
-            card = FolderCard(item)
-        else:
-            card = FileCard(item)
+        card = FolderCard(item) if item.is_folder else FileCard(item)
 
         card.clicked.connect(self._on_card_clicked)
         card.double_clicked.connect(self.item_opened.emit)
@@ -246,7 +245,7 @@ class CardGridView(QWidget):
         for _, flow in self._sections.values():
             flow.clear()
 
-    def get_selected_item(self) -> Optional[RecentItem]:
+    def get_selected_item(self) -> RecentItem | None:
         """Get the currently selected item."""
         if self._selected_card:
             return self._selected_card.item

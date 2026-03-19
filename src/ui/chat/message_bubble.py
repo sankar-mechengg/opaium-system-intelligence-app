@@ -10,12 +10,17 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+from PySide6.QtCore import QRectF, Qt, QTimer
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QSizePolicy, QTextBrowser,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QTextBrowser,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QSize, QRectF, QTimer
-from PySide6.QtGui import QFont, QPainter, QPixmap, QColor, QBrush, QPen
 
 
 class MessageRole:
@@ -42,7 +47,8 @@ class StyledBubbleFrame(QFrame):
     """QFrame subclass that properly paints QSS backgrounds and borders."""
 
     def paintEvent(self, event):
-        from PySide6.QtWidgets import QStyleOption, QStyle
+        from PySide6.QtWidgets import QStyle, QStyleOption
+
         opt = QStyleOption()
         opt.initFrom(self)
         painter = QPainter(self)
@@ -70,17 +76,19 @@ class RoundAvatar(QWidget):
 
         if self._role == MessageRole.ASSISTANT:
             from src.config.constants import AppConstants
+
             logo_path = AppConstants.LOGO_PATH
             if logo_path and Path(logo_path).exists():
                 pixmap = QPixmap(str(logo_path))
                 if not pixmap.isNull():
                     scaled = pixmap.scaled(
-                        self.SIZE - 4, self.SIZE - 4,
+                        self.SIZE - 4,
+                        self.SIZE - 4,
                         Qt.AspectRatioMode.KeepAspectRatio,
                         Qt.TransformationMode.SmoothTransformation,
                     )
                     from PySide6.QtGui import QRegion
-                    from PySide6.QtCore import QRect
+
                     painter.setClipRegion(QRegion(rect.toRect(), QRegion.RegionType.Ellipse))
                     painter.drawPixmap(2, 2, scaled)
                     painter.setClipRegion(QRegion())
@@ -122,9 +130,7 @@ class MarkdownBrowser(QTextBrowser):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.setStyleSheet(
-            "QTextBrowser { background: transparent; border: none; }"
-        )
+        self.setStyleSheet("QTextBrowser { background: transparent; border: none; }")
 
         self.setHtml(html_content)
         self.document().setDocumentMargin(4)
@@ -215,6 +221,7 @@ class MessageBubble(QFrame):
         # Render content: markdown for assistant, plain text for others
         if is_assistant:
             from src.utils.markdown_renderer import markdown_to_html
+
             html_content = markdown_to_html(self._message.content)
             content_widget = MarkdownBrowser(html_content)
             content_widget.setObjectName(f"bubbleContent_{self._message.role}")
@@ -226,9 +233,7 @@ class MessageBubble(QFrame):
             content_label = QLabel(self._message.content)
             content_label.setObjectName(f"bubbleContent_{self._message.role}")
             content_label.setWordWrap(True)
-            content_label.setTextInteractionFlags(
-                Qt.TextInteractionFlag.TextSelectableByMouse
-            )
+            content_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             content_label.setMinimumWidth(60)
             content_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             content_font = QFont()

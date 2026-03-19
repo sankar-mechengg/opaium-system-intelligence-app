@@ -19,7 +19,6 @@ from src.core.models import OperationRecord
 
 
 class FileRenamerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "rename_files"

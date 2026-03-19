@@ -7,13 +7,20 @@ and speech transcription settings.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QLineEdit, QPushButton, QGroupBox, QFormLayout,
-)
+from loguru import logger
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
-from loguru import logger
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.config.config_manager import ConfigManager
 
@@ -90,15 +97,17 @@ class AISettings(QWidget):
         model_form = QFormLayout(model_group)
 
         self._model_combo = QComboBox()
-        self._model_combo.addItems([
-            "gpt-5.2-2025-12-11",
-            "gpt-4.1",
-            "gpt-4.1-mini",
-            "gpt-4.1-nano",
-            "gpt-4o",
-            "gpt-4o-mini",
-            "o4-mini",
-        ])
+        self._model_combo.addItems(
+            [
+                "gpt-5.2-2025-12-11",
+                "gpt-4.1",
+                "gpt-4.1-mini",
+                "gpt-4.1-nano",
+                "gpt-4o",
+                "gpt-4o-mini",
+                "o4-mini",
+            ]
+        )
         self._model_combo.setMinimumHeight(32)
         model_form.addRow("Chat Model:", self._model_combo)
 
@@ -128,7 +137,11 @@ class AISettings(QWidget):
             self._model_combo.setCurrentIndex(idx)
 
         # Transcription model (handle enum)
-        transcription_value = settings.transcription_model.value if hasattr(settings.transcription_model, 'value') else str(settings.transcription_model)
+        transcription_value = (
+            settings.transcription_model.value
+            if hasattr(settings.transcription_model, "value")
+            else str(settings.transcription_model)
+        )
         idx = self._speech_model.findText(transcription_value)
         if idx >= 0:
             self._speech_model.setCurrentIndex(idx)
@@ -159,6 +172,7 @@ class AISettings(QWidget):
 
     def save(self) -> None:
         from src.config.defaults import TranscriptionModel
+
         self._config.update("ai", "ai_model", self._model_combo.currentText())
         # Convert string to enum
         speech_text = self._speech_model.currentText()

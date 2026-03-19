@@ -10,9 +10,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
-
-from loguru import logger
 
 from src.config.constants import AppConstants
 
@@ -87,7 +84,7 @@ You have FULL ROOT-LEVEL ACCESS to perform:
 
     @staticmethod
     def build_system_prompt(
-        selected_folder: Optional[str] = None,
+        selected_folder: str | None = None,
         scan_mode: str = "shallow",
     ) -> str:
         """
@@ -133,11 +130,12 @@ You have FULL ROOT-LEVEL ACCESS to perform:
             drive = os.path.splitdrive(folder_path)[0]
             if drive:
                 from src.utils.windows_api import WindowsAPI
+
                 total, used, free = WindowsAPI.get_disk_free_space(drive)
                 from src.utils.path_utils import PathUtils
+
                 lines.append(
-                    f"- **Drive {drive}**: {PathUtils.format_size(free)} free "
-                    f"of {PathUtils.format_size(total)}"
+                    f"- **Drive {drive}**: {PathUtils.format_size(free)} free of {PathUtils.format_size(total)}"
                 )
         except Exception:
             pass
@@ -147,8 +145,8 @@ You have FULL ROOT-LEVEL ACCESS to perform:
     @staticmethod
     def build_user_message(
         user_text: str,
-        selected_folder: Optional[str] = None,
-        selected_files: Optional[list[str]] = None,
+        selected_folder: str | None = None,
+        selected_files: list[str] | None = None,
     ) -> str:
         """
         Build a user message with optional file selection context.

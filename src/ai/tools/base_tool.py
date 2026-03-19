@@ -9,7 +9,7 @@ integrates with the undo journal for reversible operations.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -34,9 +34,9 @@ class ToolResult:
         success: bool = True,
         message: str = "",
         data: Any = None,
-        operation: Optional[OperationRecord] = None,
+        operation: OperationRecord | None = None,
         requires_approval: bool = False,
-        preview: Optional[list[str]] = None,
+        preview: list[str] | None = None,
     ) -> None:
         self.success = success
         self.message = message
@@ -145,11 +145,13 @@ class BaseTool(ABC):
     def _validate_path(self, path: str) -> bool:
         """Validate that a path exists and is accessible."""
         import os
+
         return os.path.exists(path) and os.access(path, os.R_OK)
 
     def _validate_directory(self, path: str) -> bool:
         """Validate that a path is an accessible directory."""
         import os
+
         return os.path.isdir(path) and os.access(path, os.R_OK)
 
     def _log_execution(self, **kwargs: Any) -> None:

@@ -9,7 +9,7 @@ session lifecycle. Resets on app close (session-based).
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -23,10 +23,10 @@ class ChatMessage:
         self,
         role: str,  # 'system', 'user', 'assistant', 'tool'
         content: str,
-        timestamp: Optional[datetime] = None,
-        tool_call_id: Optional[str] = None,
-        tool_calls: Optional[list[dict[str, Any]]] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        timestamp: datetime | None = None,
+        tool_call_id: str | None = None,
+        tool_calls: list[dict[str, Any]] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self.role = role
         self.content = content
@@ -108,7 +108,7 @@ class ConversationManager:
     def add_assistant_message(
         self,
         content: str,
-        tool_calls: Optional[list[dict[str, Any]]] = None,
+        tool_calls: list[dict[str, Any]] | None = None,
     ) -> ChatMessage:
         """Add an assistant response."""
         msg = ChatMessage(role="assistant", content=content, tool_calls=tool_calls)
@@ -131,10 +131,12 @@ class ConversationManager:
 
         # System prompt always first
         if self._system_prompt:
-            api_messages.append({
-                "role": "system",
-                "content": self._system_prompt,
-            })
+            api_messages.append(
+                {
+                    "role": "system",
+                    "content": self._system_prompt,
+                }
+            )
 
         # Add conversation messages
         for msg in self._messages:
@@ -142,14 +144,14 @@ class ConversationManager:
 
         return api_messages
 
-    def get_last_user_message(self) -> Optional[str]:
+    def get_last_user_message(self) -> str | None:
         """Get the most recent user message content."""
         for msg in reversed(self._messages):
             if msg.is_user:
                 return msg.content
         return None
 
-    def get_last_assistant_message(self) -> Optional[str]:
+    def get_last_assistant_message(self) -> str | None:
         """Get the most recent assistant response."""
         for msg in reversed(self._messages):
             if msg.is_assistant:
@@ -195,8 +197,12 @@ class ConversationManager:
         last = self.get_last_assistant_message()
         if last:
             approval_keywords = [
-                "approve", "confirm", "proceed",
-                "yes/no", "shall i", "would you like me to",
+                "approve",
+                "confirm",
+                "proceed",
+                "yes/no",
+                "shall i",
+                "would you like me to",
             ]
             return any(kw in last.lower() for kw in approval_keywords)
         return False

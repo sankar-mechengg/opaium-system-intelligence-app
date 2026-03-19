@@ -9,9 +9,10 @@ Wrapper around the OpenAI API for:
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
+
 from src.config.config_manager import ConfigManager
 
 
@@ -20,11 +21,12 @@ class OpenAIClient:
 
     def __init__(self, config: ConfigManager) -> None:
         self._config = config
-        self._client: Optional[Any] = None
+        self._client: Any | None = None
 
     def _get_client(self) -> Any:
         if self._client is None:
             from openai import OpenAI
+
             api_key = self._config.get_api_key()
             if not api_key:
                 raise ValueError("OpenAI API key not configured. Add it in Settings.")
@@ -48,7 +50,7 @@ class OpenAIClient:
     def chat_completion(
         self,
         messages: list[dict[str, Any]],
-        tools: Optional[list[dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         tool_choice: str = "auto",
         temperature: float = 0.3,
         max_tokens: int = 4096,
@@ -126,11 +128,13 @@ class OpenAIClient:
                 return response
 
             # Add assistant message with tool calls
-            current_messages.append({
-                "role": "assistant",
-                "content": response["message"]["content"],
-                "tool_calls": tool_calls,
-            })
+            current_messages.append(
+                {
+                    "role": "assistant",
+                    "content": response["message"]["content"],
+                    "tool_calls": tool_calls,
+                }
+            )
 
             # Execute each tool
             for tc in tool_calls:
@@ -144,7 +148,7 @@ class OpenAIClient:
                 try:
                     result = tool_executor.execute_tool(func_name, func_args)
                     # Convert ToolResult to dict if needed
-                    if hasattr(result, 'to_dict'):
+                    if hasattr(result, "to_dict"):
                         result_dict = result.to_dict()
                         result_str = json.dumps(result_dict)
                     elif isinstance(result, str):
@@ -155,25 +159,32 @@ class OpenAIClient:
                     result_str = json.dumps({"error": str(e)})
                     logger.error(f"Tool error: {func_name} -> {e}")
 
-                current_messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc["id"],
-                    "content": result_str,
-                })
+                current_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": result_str,
+                    }
+                )
 
         logger.warning(f"Max tool rounds ({max_rounds}) reached.")
         # Make one final call without tools to get a text summary
         try:
-            current_messages.append({
-                "role": "user",
-                "content": "Please summarize what you've done so far and provide your response.",
-            })
+            current_messages.append(
+                {
+                    "role": "user",
+                    "content": "Please summarize what you've done so far and provide your response.",
+                }
+            )
             response = self.chat_completion(current_messages, tools=None)
         except Exception as e:
             logger.error(f"Final summary call failed: {e}")
             if not response.get("message", {}).get("content"):
                 response = {
-                    "message": {"content": "I completed several operations but reached the processing limit. Please check the results.", "tool_calls": None},
+                    "message": {
+                        "content": "I completed several operations but reached the processing limit. Please check the results.",
+                        "tool_calls": None,
+                    },
                     "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
                     "finish_reason": "length",
                 }
@@ -202,7 +213,7 @@ class OpenAIClient:
 
     def test_connection(self) -> tuple[bool, str]:
         try:
-            resp = self.chat_completion([{"role": "user", "content": "Say OK"}], max_tokens=5, temperature=0)
+            self.chat_completion([{"role": "user", "content": "Say OK"}], max_tokens=5, temperature=0)
             return True, f"Connected. Model: {self.model}"
         except ValueError as e:
             return False, str(e)

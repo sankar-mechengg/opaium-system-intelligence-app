@@ -18,6 +18,7 @@ from loguru import logger
 
 class PlatformInfo(NamedTuple):
     """System platform information."""
+
     os_name: str
     os_version: str
     os_build: str
@@ -56,10 +57,6 @@ def check_platform() -> PlatformInfo:
             logger.warning("Could not determine Windows version.")
 
     # Check Python version
-    if sys.version_info < (3, 11):
-        issues.append(
-            f"Python 3.11+ required. Detected: {python_version}"
-        )
 
     # Check for required modules
     required_modules = ["ctypes", "sqlite3", "json", "pathlib"]

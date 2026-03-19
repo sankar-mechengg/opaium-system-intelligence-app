@@ -11,12 +11,10 @@ Orchestrates the application lifecycle:
 
 from __future__ import annotations
 
-from typing import Optional
-
-from PySide6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
-from PySide6.QtGui import QIcon, QAction
-from PySide6.QtCore import QTimer
 from loguru import logger
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QAction, QIcon
+from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from src.config.config_manager import ConfigManager
 from src.config.constants import AppConstants
@@ -32,11 +30,11 @@ class OpAIUMApp:
     def __init__(self, qt_app: QApplication, config: ConfigManager) -> None:
         self._qt_app = qt_app
         self._config = config
-        self._main_window: Optional[object] = None  # Will be MainWindow
-        self._tray_icon: Optional[QSystemTrayIcon] = None
-        self._refresh_timer: Optional[QTimer] = None
-        self._first_run_setup: Optional[object] = None  # Will be FirstRunSetup
-        self._auth_screen: Optional[object] = None  # Will be AuthScreen
+        self._main_window: object | None = None  # Will be MainWindow
+        self._tray_icon: QSystemTrayIcon | None = None
+        self._refresh_timer: QTimer | None = None
+        self._first_run_setup: object | None = None  # Will be FirstRunSetup
+        self._auth_screen: object | None = None  # Will be AuthScreen
 
     def initialize(self) -> None:
         """Initialize the application — auth check, then show UI."""
@@ -57,7 +55,7 @@ class OpAIUMApp:
         """Apply the current theme (light or dark) stylesheet."""
         theme = self._config.settings.appearance.theme
         # Use .value to get the enum's string value ("light" or "dark")
-        theme_value = theme.value if hasattr(theme, 'value') else str(theme)
+        theme_value = theme.value if hasattr(theme, "value") else str(theme)
         theme_file = AppConstants.THEMES_DIR / f"{theme_value}.qss"
 
         if theme_file.exists():
@@ -167,9 +165,7 @@ class OpAIUMApp:
         self._refresh_timer.timeout.connect(self._auto_refresh)
         self._refresh_timer.start(interval_ms)
 
-        logger.info(
-            f"Auto-refresh started: every {self._config.settings.refresh.refresh_interval_seconds}s"
-        )
+        logger.info(f"Auto-refresh started: every {self._config.settings.refresh.refresh_interval_seconds}s")
 
     def _auto_refresh(self) -> None:
         """Trigger auto-refresh of file/folder data."""
@@ -203,12 +199,10 @@ class OpAIUMApp:
         """Register app in Windows startup."""
         import sys
 
-        if getattr(sys, "frozen", False):
-            app_path = sys.executable
-        else:
-            app_path = sys.argv[0]
+        app_path = sys.executable if getattr(sys, "frozen", False) else sys.argv[0]
 
         from src.utils.windows_api import WindowsAPI
+
         WindowsAPI.add_to_startup(app_path)
 
     def _quit(self) -> None:

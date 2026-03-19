@@ -7,11 +7,14 @@ speech-to-text input. Supports multiline and keyboard shortcuts.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QTextEdit, QPushButton, QSizePolicy,
-)
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont, QKeyEvent
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QPushButton,
+    QTextEdit,
+    QWidget,
+)
 
 
 class ChatInputBar(QWidget):

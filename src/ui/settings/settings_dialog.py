@@ -7,18 +7,23 @@ Appearance, General, AI, and Security.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QPushButton,
-    QWidget, QMessageBox,
-)
+from loguru import logger
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
-from loguru import logger
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QMessageBox,
+    QPushButton,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.config.config_manager import ConfigManager
+from src.ui.settings.ai_settings import AISettings
 from src.ui.settings.appearance_settings import AppearanceSettings
 from src.ui.settings.general_settings import GeneralSettings
-from src.ui.settings.ai_settings import AISettings
 from src.ui.settings.security_settings import SecuritySettings
 
 

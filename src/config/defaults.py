@@ -7,45 +7,49 @@ These are serialized/deserialized to the encrypted config file.
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 from src.config.constants import AppConstants
 
 
-class ThemeMode(str, Enum):
+class ThemeMode(StrEnum):
     """Available theme modes."""
+
     LIGHT = "light"
     DARK = "dark"
 
 
-class TranscriptionModel(str, Enum):
+class TranscriptionModel(StrEnum):
     """Available speech transcription models."""
+
     GPT_4O_TRANSCRIBE = "gpt-4o-transcribe"
     WHISPER_1 = "whisper-1"
 
 
-class PasswordType(str, Enum):
+class PasswordType(StrEnum):
     """Password type choices."""
+
     PIN = "pin"
     PASSWORD = "password"
 
 
-class FolderDepthMode(str, Enum):
+class FolderDepthMode(StrEnum):
     """AI folder scanning depth."""
+
     SHALLOW = "shallow"
     RECURSIVE = "recursive"
 
 
 class AppearanceConfig(BaseModel):
     """UI appearance settings."""
+
     theme: ThemeMode = ThemeMode.LIGHT
     window_width: int = AppConstants.DEFAULT_WINDOW_WIDTH
     window_height: int = AppConstants.DEFAULT_WINDOW_HEIGHT
-    window_x: Optional[int] = None
-    window_y: Optional[int] = None
+    window_x: int | None = None
+    window_y: int | None = None
     show_hidden_folders: bool = False
     card_width: int = AppConstants.CARD_WIDTH
     card_height: int = AppConstants.CARD_HEIGHT
@@ -54,12 +58,14 @@ class AppearanceConfig(BaseModel):
 
 class RefreshConfig(BaseModel):
     """Auto-refresh settings."""
+
     auto_refresh_enabled: bool = True
     refresh_interval_seconds: int = AppConstants.DEFAULT_REFRESH_INTERVAL
 
 
 class AIConfig(BaseModel):
     """AI integration settings."""
+
     api_key_encrypted: str = ""
     ai_model: str = AppConstants.DEFAULT_AI_MODEL
     transcription_model: TranscriptionModel = TranscriptionModel.GPT_4O_TRANSCRIBE
@@ -70,6 +76,7 @@ class AIConfig(BaseModel):
 
 class AuthConfig(BaseModel):
     """Authentication settings."""
+
     password_type: PasswordType = PasswordType.PIN
     password_hash: str = ""
     salt: str = ""
@@ -78,6 +85,7 @@ class AuthConfig(BaseModel):
 
 class StartupConfig(BaseModel):
     """Startup and system tray settings."""
+
     start_with_windows: bool = True
     minimize_to_tray: bool = True
     show_notifications: bool = True
@@ -85,6 +93,7 @@ class StartupConfig(BaseModel):
 
 class UndoConfig(BaseModel):
     """Undo system settings."""
+
     purge_days: int = AppConstants.UNDO_PURGE_DAYS
     max_operations: int = 10000
 
@@ -94,6 +103,7 @@ class DefaultConfig(BaseModel):
     Master configuration model containing all settings.
     This is what gets serialized to the encrypted config file.
     """
+
     appearance: AppearanceConfig = Field(default_factory=AppearanceConfig)
     refresh: RefreshConfig = Field(default_factory=RefreshConfig)
     ai: AIConfig = Field(default_factory=AIConfig)

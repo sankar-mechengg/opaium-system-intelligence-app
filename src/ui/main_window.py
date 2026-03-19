@@ -12,25 +12,28 @@ The primary application window that combines:
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QStackedWidget,
-    QApplication,
-)
-from PySide6.QtCore import Qt, QSize, QTimer
-from PySide6.QtGui import QIcon
 from loguru import logger
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.config.config_manager import ConfigManager
 from src.config.constants import AppConstants
-from src.undo.undo_manager import UndoManager
-from src.undo.operation_journal import OperationJournal
-from src.ui.title_bar import TitleBar
-from src.ui.explorer.explorer_panel import ExplorerPanel
 from src.ui.chat.chat_panel import ChatPanel
+from src.ui.explorer.explorer_panel import ExplorerPanel
 from src.ui.history.history_panel import HistoryPanel
+from src.ui.notifications.toast import NotificationManager
 from src.ui.settings.settings_dialog import SettingsDialog
-from src.ui.notifications.toast import NotificationManager, NotificationType
+from src.ui.title_bar import TitleBar
 from src.ui.widgets.resize_grip import ResizeGrip
+from src.undo.operation_journal import OperationJournal
+from src.undo.undo_manager import UndoManager
 
 
 class MainWindow(QMainWindow):
@@ -66,10 +69,7 @@ class MainWindow(QMainWindow):
         self.resize(1280, 800)
 
         # Frameless with resize support
-        self.setWindowFlags(
-            Qt.WindowType.Window
-            | Qt.WindowType.FramelessWindowHint
-        )
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         # Icon
@@ -258,7 +258,6 @@ class MainWindow(QMainWindow):
 
     def _create_resize_grips(self, parent: QWidget) -> list[ResizeGrip]:
         """Create resize grips at window edges and corners."""
-        b = 6
         grips = []
         for edge in ["left", "right", "top", "bottom", "tl", "tr", "bl", "br"]:
             g = ResizeGrip(edge, parent)
@@ -283,7 +282,7 @@ class MainWindow(QMainWindow):
             (0, h - b, b, b),
             (w - b, h - b, b, b),
         ]
-        for grip, (x, y, gw, gh) in zip(self._resize_grips, geos):
+        for grip, (x, y, gw, gh) in zip(self._resize_grips, geos, strict=False):
             grip.setGeometry(x, y, max(1, gw), max(1, gh))
             grip.raise_()
 

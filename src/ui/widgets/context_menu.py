@@ -10,12 +10,10 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Optional, Callable
 
-from PySide6.QtWidgets import QMenu, QWidget, QInputDialog
-from PySide6.QtGui import QAction, QIcon
-from PySide6.QtCore import Signal, QObject
 from loguru import logger
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QInputDialog, QMenu, QWidget
 
 
 class ContextMenuBuilder(QObject):
@@ -76,10 +74,10 @@ class ContextMenuBuilder(QObject):
             q = question
             p = folder_path
             action.triggered.connect(lambda checked=False, qn=q, pt=p: self.ask_ai.emit(qn, pt))
-        
+
         # Add separator before custom question
         ai_menu.addSeparator()
-        
+
         # Custom Question option
         custom_action = ai_menu.addAction("Custom Question...")
         custom_action.triggered.connect(lambda: self._ask_custom_question(folder_path))
@@ -88,9 +86,7 @@ class ContextMenuBuilder(QObject):
 
         # Properties
         props_action = menu.addAction("Properties")
-        props_action.triggered.connect(
-            lambda: self.action_triggered.emit("properties", folder_path)
-        )
+        props_action.triggered.connect(lambda: self.action_triggered.emit("properties", folder_path))
 
         return menu
 
@@ -111,9 +107,7 @@ class ContextMenuBuilder(QObject):
 
         # Open containing folder
         open_folder = menu.addAction("Open Containing Folder")
-        open_folder.triggered.connect(
-            lambda: self._open_in_explorer(str(Path(file_path).parent), select=file_path)
-        )
+        open_folder.triggered.connect(lambda: self._open_in_explorer(str(Path(file_path).parent), select=file_path))
 
         menu.addSeparator()
 
@@ -138,10 +132,10 @@ class ContextMenuBuilder(QObject):
             q = question
             p = file_path
             action.triggered.connect(lambda checked=False, qn=q, pt=p: self.ask_ai.emit(qn, pt))
-        
+
         # Add separator before custom question
         ai_menu.addSeparator()
-        
+
         # Custom Question option
         custom_action = ai_menu.addAction("Custom Question...")
         custom_action.triggered.connect(lambda: self._ask_custom_question(file_path))
@@ -150,20 +144,16 @@ class ContextMenuBuilder(QObject):
 
         # Delete (to recycle bin)
         delete_action = menu.addAction("Delete")
-        delete_action.triggered.connect(
-            lambda: self.action_triggered.emit("delete", file_path)
-        )
+        delete_action.triggered.connect(lambda: self.action_triggered.emit("delete", file_path))
 
         # Properties
         props_action = menu.addAction("Properties")
-        props_action.triggered.connect(
-            lambda: self.action_triggered.emit("properties", file_path)
-        )
+        props_action.triggered.connect(lambda: self.action_triggered.emit("properties", file_path))
 
         return menu
 
     @staticmethod
-    def _open_in_explorer(path: str, select: Optional[str] = None) -> None:
+    def _open_in_explorer(path: str, select: str | None = None) -> None:
         """Open a path in Windows Explorer."""
         try:
             if select:
@@ -194,28 +184,28 @@ class ContextMenuBuilder(QObject):
         """Copy text to clipboard."""
         try:
             from PySide6.QtWidgets import QApplication
+
             clipboard = QApplication.clipboard()
             if clipboard:
                 clipboard.setText(text)
         except Exception as e:
             logger.error(f"Failed to copy to clipboard: {e}")
-    
+
     def _ask_custom_question(self, item_path: str) -> None:
         """Open a dialog for user to enter a custom AI question."""
-        from PySide6.QtWidgets import QApplication
-        
+
         item_name = Path(item_path).name
         is_folder = Path(item_path).is_dir()
         item_type = "folder" if is_folder else "file"
-        
+
         # Get the dialog with proper styling
         text, ok = QInputDialog.getText(
             None,
             "Ask AI Custom Question",
             f"Enter your question about {item_type} '{item_name}':",
-            text=f"",  # Empty default text
+            text="",  # Empty default text
         )
-        
+
         if ok and text.strip():
             # Emit the custom question
             self.ask_ai.emit(text.strip(), item_path)

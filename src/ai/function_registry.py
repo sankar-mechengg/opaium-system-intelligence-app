@@ -8,8 +8,8 @@ bridge between the AI model and the actual tool implementations.
 
 from __future__ import annotations
 
-import json
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 
@@ -76,7 +76,7 @@ class FunctionRegistry:
         )
         logger.debug(f"Registered tool: {name} (destructive={is_destructive})")
 
-    def get_tool(self, name: str) -> Optional[ToolDefinition]:
+    def get_tool(self, name: str) -> ToolDefinition | None:
         """Get a tool by name."""
         return self._tools.get(name)
 
@@ -123,38 +123,53 @@ class FunctionRegistry:
         Register all built-in AI tools.
         Called during AI engine initialization.
         """
-        from src.ai.tools.file_counter import FileCounterTool
-        from src.ai.tools.file_sizer import FileSizerTool
-        from src.ai.tools.type_summarizer import TypeSummarizerTool
+        from src.ai.tools.date_organizer import DateOrganizerTool
+        from src.ai.tools.disk_usage_tool import DiskUsageTool
         from src.ai.tools.duplicate_finder import DuplicateFinderTool
-        from src.ai.tools.large_file_finder import LargeFileFinderTool
         from src.ai.tools.empty_folder_cleaner import EmptyFolderCleanerTool
+        from src.ai.tools.extension_changer import ExtensionChangerTool
         from src.ai.tools.file_age_analyzer import FileAgeAnalyzerTool
-        from src.ai.tools.file_renamer import FileRenamerTool
+        from src.ai.tools.file_content import FileContentTool
+        from src.ai.tools.file_copier import FileCopierTool
+        from src.ai.tools.file_counter import FileCounterTool
         from src.ai.tools.file_deleter import FileDeleterTool
         from src.ai.tools.file_mover import FileMoverTool
-        from src.ai.tools.file_copier import FileCopierTool
-        from src.ai.tools.smart_organizer import SmartOrganizerTool
-        from src.ai.tools.date_organizer import DateOrganizerTool
+        from src.ai.tools.file_renamer import FileRenamerTool
+        from src.ai.tools.file_sizer import FileSizerTool
         from src.ai.tools.folder_flattener import FolderFlattenerTool
-        from src.ai.tools.regex_renamer import RegexRenamerTool
-        from src.ai.tools.extension_changer import ExtensionChangerTool
+        from src.ai.tools.folder_operations import FolderOperationsTool
+        from src.ai.tools.large_file_finder import LargeFileFinderTool
         from src.ai.tools.metadata_reader import MetadataReaderTool
         from src.ai.tools.recycle_bin_tool import RecycleBinTool
+        from src.ai.tools.regex_renamer import RegexRenamerTool
+        from src.ai.tools.smart_organizer import SmartOrganizerTool
         from src.ai.tools.startup_tool import StartupTool
-        from src.ai.tools.disk_usage_tool import DiskUsageTool
-        from src.ai.tools.folder_operations import FolderOperationsTool
-        from src.ai.tools.file_content import FileContentTool
+        from src.ai.tools.type_summarizer import TypeSummarizerTool
 
         # Instantiate and register all tools
         tool_classes = [
-            FileCounterTool, FileSizerTool, TypeSummarizerTool,
-            DuplicateFinderTool, LargeFileFinderTool, EmptyFolderCleanerTool,
-            FileAgeAnalyzerTool, FileRenamerTool, FileDeleterTool,
-            FileMoverTool, FileCopierTool, SmartOrganizerTool,
-            DateOrganizerTool, FolderFlattenerTool, RegexRenamerTool,
-            ExtensionChangerTool, MetadataReaderTool, RecycleBinTool,
-            StartupTool, DiskUsageTool, FolderOperationsTool, FileContentTool,
+            FileCounterTool,
+            FileSizerTool,
+            TypeSummarizerTool,
+            DuplicateFinderTool,
+            LargeFileFinderTool,
+            EmptyFolderCleanerTool,
+            FileAgeAnalyzerTool,
+            FileRenamerTool,
+            FileDeleterTool,
+            FileMoverTool,
+            FileCopierTool,
+            SmartOrganizerTool,
+            DateOrganizerTool,
+            FolderFlattenerTool,
+            RegexRenamerTool,
+            ExtensionChangerTool,
+            MetadataReaderTool,
+            RecycleBinTool,
+            StartupTool,
+            DiskUsageTool,
+            FolderOperationsTool,
+            FileContentTool,
         ]
 
         for tool_cls in tool_classes:

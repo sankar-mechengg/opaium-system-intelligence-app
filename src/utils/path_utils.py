@@ -9,9 +9,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
-
-from loguru import logger
 
 from src.config.constants import AppConstants
 
@@ -77,6 +74,7 @@ class PathUtils:
         # Check Windows file attributes
         try:
             import ctypes
+
             attrs = ctypes.windll.kernel32.GetFileAttributesW(str(p))  # type: ignore[union-attr]
             if attrs == -1:
                 return False
@@ -142,7 +140,7 @@ class PathUtils:
         return Path(path).suffix.lstrip(".").lower()
 
     @staticmethod
-    def get_drive_letter(path: str | Path) -> Optional[str]:
+    def get_drive_letter(path: str | Path) -> str | None:
         """
         Extract drive letter from a Windows path.
 

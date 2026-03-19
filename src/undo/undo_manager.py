@@ -14,13 +14,11 @@ from __future__ import annotations
 
 import os
 import shutil
-from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
 from src.undo.operation_journal import OperationJournal
-from src.undo.operation_models import Operation, OperationType, FileMapping
+from src.undo.operation_models import Operation, OperationType
 
 
 class UndoManager:
@@ -39,10 +37,10 @@ class UndoManager:
     def get_recent_operations(self, limit: int = 50) -> list[Operation]:
         """
         Get recent operations from the journal.
-        
+
         Args:
             limit: Maximum number of operations to return.
-            
+
         Returns:
             List of recent operations.
         """
@@ -53,7 +51,7 @@ class UndoManager:
         undoable = self._journal.get_undoable()
         return len(undoable) > 0
 
-    def get_last_undoable(self) -> Optional[Operation]:
+    def get_last_undoable(self) -> Operation | None:
         """Get the most recent undoable operation."""
         undoable = self._journal.get_undoable()
         return undoable[0] if undoable else None
@@ -199,6 +197,7 @@ class UndoManager:
 
             try:
                 from send2trash import send2trash
+
                 send2trash(copy_path)
                 deleted += 1
             except Exception:
@@ -238,8 +237,7 @@ class UndoManager:
             logger.debug(f"COM restore failed: {e}")
 
         return False, (
-            f"Could not automatically restore {count} item(s). "
-            f"Please check the Recycle Bin manually to restore them."
+            f"Could not automatically restore {count} item(s). Please check the Recycle Bin manually to restore them."
         )
 
     def _restore_from_recycle_bin(self, original_paths: list[str]) -> int:
@@ -256,9 +254,7 @@ class UndoManager:
                 recycle_bin = desktop.BindToObject(pidl, None, shell.IID_IShellFolder)
 
                 # Enumerate and find matching items
-                enum = recycle_bin.EnumObjects(
-                    0, shellcon.SHCONTF_FOLDERS | shellcon.SHCONTF_NONFOLDERS
-                )
+                enum = recycle_bin.EnumObjects(0, shellcon.SHCONTF_FOLDERS | shellcon.SHCONTF_NONFOLDERS)
                 if enum is None:
                     return 0
 

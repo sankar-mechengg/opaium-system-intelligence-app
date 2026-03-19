@@ -4,17 +4,16 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import pytest
-
 from src.core.models import (
-    RecentItem, FolderItem, FileItem, TrackingRecord,
-    OperationRecord, ItemType,
+    FileItem,
+    ItemType,
+    OperationRecord,
+    RecentItem,
 )
 from src.utils.time_utils import TimeGroup
 
 
 class TestRecentItem:
-
     def test_create_folder_item(self):
         item = RecentItem(
             path="C:\\Users\\Test\\Documents",
@@ -56,39 +55,43 @@ class TestRecentItem:
 
 
 class TestFileItem:
-
     def test_image_classification(self):
+        flags = FileItem.classify_extension("jpg")
         item = FileItem(
             path="/test/photo.jpg",
             name="photo.jpg",
             size_bytes=5000,
             extension="jpg",
+            **flags,
         )
         assert item.is_image is True
         assert item.is_document is False
 
     def test_document_classification(self):
+        flags = FileItem.classify_extension("pdf")
         item = FileItem(
             path="/test/report.pdf",
             name="report.pdf",
             size_bytes=50000,
             extension="pdf",
+            **flags,
         )
         assert item.is_document is True
         assert item.is_image is False
 
     def test_archive_classification(self):
+        flags = FileItem.classify_extension("zip")
         item = FileItem(
             path="/test/backup.zip",
             name="backup.zip",
             size_bytes=100000,
             extension="zip",
+            **flags,
         )
         assert item.is_archive is True
 
 
 class TestOperationRecord:
-
     def test_create_rename_operation(self):
         op = OperationRecord(
             timestamp=datetime.now(),

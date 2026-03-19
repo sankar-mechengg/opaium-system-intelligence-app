@@ -10,15 +10,15 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Generator
 
 from loguru import logger
 
 from src.config.constants import AppConstants
-from src.undo.operation_models import Operation, OperationType, FileMapping
+from src.undo.operation_models import FileMapping, Operation, OperationType
 
 
 class OperationJournal:
@@ -30,9 +30,9 @@ class OperationJournal:
     configured retention period (default: 2 days).
     """
 
-    def __init__(self, db_path: Optional[Path] = None) -> None:
+    def __init__(self, db_path: Path | None = None) -> None:
         self._db_path = db_path or AppConstants.UNDO_DB_FILE
-        self._connection: Optional[sqlite3.Connection] = None
+        self._connection: sqlite3.Connection | None = None
         self._initialize()
 
     def _initialize(self) -> None:
@@ -136,17 +136,19 @@ class OperationJournal:
                     """INSERT INTO file_mappings
                        (operation_id, source, destination, original_name, new_name)
                        VALUES (?, ?, ?, ?, ?)""",
-                    (op_id, mapping.source, mapping.destination,
-                     mapping.original_name, mapping.new_name),
+                    (
+                        op_id,
+                        mapping.source,
+                        mapping.destination,
+                        mapping.original_name,
+                        mapping.new_name,
+                    ),
                 )
 
-            logger.info(
-                f"Recorded operation #{op_id}: {operation.type_label} "
-                f"({operation.affected_count} items)"
-            )
+            logger.info(f"Recorded operation #{op_id}: {operation.type_label} ({operation.affected_count} items)")
             return op_id  # type: ignore[return-value]
 
-    def get_operation(self, op_id: int) -> Optional[Operation]:
+    def get_operation(self, op_id: int) -> Operation | None:
         """Get a specific operation by ID."""
         with self._cursor() as cursor:
             cursor.execute("SELECT * FROM operations WHERE id = ?", (op_id,))
@@ -154,9 +156,7 @@ class OperationJournal:
             if not row:
                 return None
 
-            cursor.execute(
-                "SELECT * FROM file_mappings WHERE operation_id = ?", (op_id,)
-            )
+            cursor.execute("SELECT * FROM file_mappings WHERE operation_id = ?", (op_id,))
             mapping_rows = cursor.fetchall()
 
             return self._row_to_operation(row, mapping_rows)
@@ -199,9 +199,7 @@ class OperationJournal:
     def mark_undone(self, op_id: int) -> None:
         """Mark an operation as undone."""
         with self._cursor() as cursor:
-            cursor.execute(
-                "UPDATE operations SET is_undone = 1 WHERE id = ?", (op_id,)
-            )
+            cursor.execute("UPDATE operations SET is_undone = 1 WHERE id = ?", (op_id,))
             logger.info(f"Operation #{op_id} marked as undone.")
 
     def mark_not_undoable(self, op_id: int, reason: str = "") -> None:
@@ -234,13 +232,9 @@ class OperationJournal:
         with self._cursor() as cursor:
             cursor.execute("SELECT COUNT(*) as total FROM operations")
             total = cursor.fetchone()["total"]
-            cursor.execute(
-                "SELECT COUNT(*) as undoable FROM operations WHERE is_undoable = 1 AND is_undone = 0"
-            )
+            cursor.execute("SELECT COUNT(*) as undoable FROM operations WHERE is_undoable = 1 AND is_undone = 0")
             undoable = cursor.fetchone()["undoable"]
-            cursor.execute(
-                "SELECT COUNT(*) as undone FROM operations WHERE is_undone = 1"
-            )
+            cursor.execute("SELECT COUNT(*) as undone FROM operations WHERE is_undone = 1")
             undone = cursor.fetchone()["undone"]
             return {"total": total, "undoable": undoable, "undone": undone}
 

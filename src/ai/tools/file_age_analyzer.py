@@ -17,7 +17,6 @@ from src.utils.path_utils import PathUtils
 
 
 class FileAgeAnalyzerTool(BaseTool):
-
     @property
     def name(self) -> str:
         return "analyze_file_ages"
@@ -83,15 +82,17 @@ class FileAgeAnalyzerTool(BaseTool):
                         mtime = datetime.fromtimestamp(stat.st_mtime)
                         if mtime < cutoff:
                             age_days = (datetime.now() - mtime).days
-                            old_files.append({
-                                "name": fname,
-                                "path": fpath,
-                                "size_bytes": stat.st_size,
-                                "display_size": PathUtils.format_size(stat.st_size),
-                                "last_modified": mtime.isoformat(),
-                                "age_days": age_days,
-                                "age_display": self._format_age(age_days),
-                            })
+                            old_files.append(
+                                {
+                                    "name": fname,
+                                    "path": fpath,
+                                    "size_bytes": stat.st_size,
+                                    "display_size": PathUtils.format_size(stat.st_size),
+                                    "last_modified": mtime.isoformat(),
+                                    "age_days": age_days,
+                                    "age_display": self._format_age(age_days),
+                                }
+                            )
                     except OSError:
                         continue
         except (OSError, PermissionError) as e:

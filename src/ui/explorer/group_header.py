@@ -7,9 +7,9 @@ with item counts and expand/collapse functionality.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from src.utils.time_utils import TimeGroup
 
@@ -26,10 +26,10 @@ class GroupHeader(QWidget):
 
     # Colors for each time group
     GROUP_COLORS = {
-        TimeGroup.LAST_2_DAYS: "#4FC3F7",   # Light blue
-        TimeGroup.LAST_WEEK: "#81C784",      # Light green
-        TimeGroup.LAST_MONTH: "#FFB74D",     # Orange
-        TimeGroup.OLDER: "#B0BEC5",          # Grey
+        TimeGroup.LAST_2_DAYS: "#4FC3F7",  # Light blue
+        TimeGroup.LAST_WEEK: "#81C784",  # Light green
+        TimeGroup.LAST_MONTH: "#FFB74D",  # Orange
+        TimeGroup.OLDER: "#B0BEC5",  # Grey
     }
 
     def __init__(

@@ -16,6 +16,7 @@ from loguru import logger
 
 class StartupEntry(NamedTuple):
     """A Windows startup program entry."""
+
     name: str
     command: str
     source: str  # 'registry_user', 'registry_machine', 'startup_folder'
@@ -69,12 +70,14 @@ class StartupManager:
                 while True:
                     try:
                         name, value, _ = winreg.EnumValue(key, i)
-                        entries.append(StartupEntry(
-                            name=name,
-                            command=value,
-                            source=source,
-                            enabled=True,
-                        ))
+                        entries.append(
+                            StartupEntry(
+                                name=name,
+                                command=value,
+                                source=source,
+                                enabled=True,
+                            )
+                        )
                         i += 1
                     except OSError:
                         break
@@ -93,9 +96,7 @@ class StartupManager:
         """Read startup entries from the Startup folder."""
         entries: list[StartupEntry] = []
 
-        startup_path = Path(os.environ.get("APPDATA", "")) / (
-            "Microsoft\\Windows\\Start Menu\\Programs\\Startup"
-        )
+        startup_path = Path(os.environ.get("APPDATA", "")) / ("Microsoft\\Windows\\Start Menu\\Programs\\Startup")
 
         if not startup_path.exists():
             return entries
@@ -103,12 +104,14 @@ class StartupManager:
         try:
             for item in startup_path.iterdir():
                 if item.suffix.lower() in (".lnk", ".exe", ".bat", ".cmd"):
-                    entries.append(StartupEntry(
-                        name=item.stem,
-                        command=str(item),
-                        source="startup_folder",
-                        enabled=True,
-                    ))
+                    entries.append(
+                        StartupEntry(
+                            name=item.stem,
+                            command=str(item),
+                            source="startup_folder",
+                            enabled=True,
+                        )
+                    )
         except Exception as e:
             logger.error(f"Failed to read Startup folder: {e}")
 

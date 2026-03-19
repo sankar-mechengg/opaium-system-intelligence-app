@@ -7,17 +7,19 @@ Users can create new chats, restore old ones, and delete conversations.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Optional
-
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QFrame, QSizePolicy, QMenu,
-)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont, QAction, QCursor
-
-from loguru import logger
+from PySide6.QtGui import QAction, QFont
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.ai.conversation_db import ConversationDB, ConversationRecord
 
@@ -25,7 +27,7 @@ from src.ai.conversation_db import ConversationDB, ConversationRecord
 class ConversationItem(QFrame):
     """A single conversation entry in the sidebar."""
 
-    clicked = Signal(int)       # conversation_id
+    clicked = Signal(int)  # conversation_id
     delete_requested = Signal(int)
 
     def __init__(self, record: ConversationRecord, parent: QWidget | None = None) -> None:
@@ -121,7 +123,7 @@ class ConversationsSidebar(QWidget):
         super().__init__(parent)
         self._db = conversation_db
         self._items: list[ConversationItem] = []
-        self._current_id: Optional[int] = None
+        self._current_id: int | None = None
         self.setObjectName("convSidebar")
         self.setFixedWidth(240)
         self._build_ui()
@@ -207,7 +209,7 @@ class ConversationsSidebar(QWidget):
             empty.setFont(empty_font)
             self._list_layout.addWidget(empty)
 
-    def set_current_conversation(self, conv_id: Optional[int]) -> None:
+    def set_current_conversation(self, conv_id: int | None) -> None:
         """Highlight the current conversation."""
         self._current_id = conv_id
         for item in self._items:

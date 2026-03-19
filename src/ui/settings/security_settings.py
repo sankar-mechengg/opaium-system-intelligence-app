@@ -6,14 +6,21 @@ Change password/PIN and manage authentication settings.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QGroupBox, QFormLayout, QRadioButton, QButtonGroup,
-    QMessageBox,
-)
+from loguru import logger
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
-from loguru import logger
+from PySide6.QtWidgets import (
+    QButtonGroup,
+    QFormLayout,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QRadioButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.auth.auth_manager import AuthManager
 from src.config.config_manager import ConfigManager

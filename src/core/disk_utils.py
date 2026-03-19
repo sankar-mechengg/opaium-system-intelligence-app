@@ -19,6 +19,7 @@ from src.utils.windows_api import WindowsAPI
 
 class DriveInfo(NamedTuple):
     """Information about a disk drive."""
+
     letter: str
     label: str
     filesystem: str
@@ -77,11 +78,13 @@ class DiskUtils:
 
                 ctypes.windll.kernel32.GetVolumeInformationW(
                     drive_path,
-                    vol_name, 256,
+                    vol_name,
+                    256,
                     ctypes.byref(serial),
                     ctypes.byref(max_component),
                     ctypes.byref(flags),
-                    fs_name, 256,
+                    fs_name,
+                    256,
                 )
 
                 # Get space
@@ -89,15 +92,17 @@ class DiskUtils:
 
                 percent = (used / total * 100) if total > 0 else 0
 
-                drives.append(DriveInfo(
-                    letter=letter,
-                    label=vol_name.value or f"Drive ({letter}:)",
-                    filesystem=fs_name.value or "Unknown",
-                    total_bytes=total,
-                    used_bytes=used,
-                    free_bytes=free,
-                    percent_used=round(percent, 1),
-                ))
+                drives.append(
+                    DriveInfo(
+                        letter=letter,
+                        label=vol_name.value or f"Drive ({letter}:)",
+                        filesystem=fs_name.value or "Unknown",
+                        total_bytes=total,
+                        used_bytes=used,
+                        free_bytes=free,
+                        percent_used=round(percent, 1),
+                    )
+                )
 
             except Exception as e:
                 logger.debug(f"Failed to get info for drive {letter}: {e}")

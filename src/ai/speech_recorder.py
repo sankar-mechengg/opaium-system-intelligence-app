@@ -8,14 +8,15 @@ Toggle mode: click to start, click to stop.
 
 from __future__ import annotations
 
+import contextlib
 import tempfile
 import wave
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 import numpy as np
-from PySide6.QtCore import QObject, Signal, QThread
 from loguru import logger
+from PySide6.QtCore import QObject, QThread, Signal
 
 
 class AudioRecorderWorker(QThread):
@@ -29,7 +30,7 @@ class AudioRecorderWorker(QThread):
     CHANNELS = 1
     DTYPE = "int16"
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._is_recording = False
         self._frames: list[np.ndarray] = []
@@ -85,9 +86,8 @@ class AudioRecorderWorker(QThread):
         """Save recorded frames to a temporary WAV file."""
         audio_data = np.concatenate(self._frames, axis=0)
 
-        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="opaium_")
-        wav_path = tmp.name
-        tmp.close()
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="opaium_") as tmp:
+            wav_path = tmp.name
 
         with wave.open(wav_path, "wb") as wf:
             wf.setnchannels(self.CHANNELS)
@@ -96,10 +96,6 @@ class AudioRecorderWorker(QThread):
             wf.writeframes(audio_data.tobytes())
 
         return wav_path
-
-
-# Need to import Any for the callback type hint
-from typing import Any
 
 
 class SpeechRecorder(QObject):
@@ -120,11 +116,11 @@ class SpeechRecorder(QObject):
     audio_level = Signal(float)
     error = Signal(str)
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._worker: Optional[AudioRecorderWorker] = None
+        self._worker: AudioRecorderWorker | None = None
         self._is_recording = False
-        self._last_wav_path: Optional[str] = None
+        self._last_wav_path: str | None = None
 
     @property
     def is_recording(self) -> bool:
@@ -174,14 +170,12 @@ class SpeechRecorder(QObject):
         self._is_recording = False
         self.error.emit(error_msg)
 
-    def get_last_recording_path(self) -> Optional[str]:
+    def get_last_recording_path(self) -> str | None:
         """Get the path to the last recorded WAV file."""
         return self._last_wav_path
 
     def cleanup(self) -> None:
         """Clean up temporary WAV files."""
         if self._last_wav_path:
-            try:
+            with contextlib.suppress(Exception):
                 Path(self._last_wav_path).unlink(missing_ok=True)
-            except Exception:
-                pass

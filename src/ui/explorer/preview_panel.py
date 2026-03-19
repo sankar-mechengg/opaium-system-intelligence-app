@@ -8,22 +8,23 @@ and item counts for folders.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Optional
 
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QFrame, QScrollArea,
-    QSizePolicy,
+    QFrame,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFont, QPixmap
 
-from src.core.models import RecentItem
 from src.config.constants import AppConstants
+from src.core.models import RecentItem
+from src.utils.icon_provider import IconProvider
 from src.utils.path_utils import PathUtils
 from src.utils.time_utils import TimeUtils
-from src.utils.icon_provider import IconProvider
 
 
 class PreviewPanel(QWidget):
@@ -36,7 +37,7 @@ class PreviewPanel(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._icon_provider = IconProvider()
-        self._current_item: Optional[RecentItem] = None
+        self._current_item: RecentItem | None = None
 
         self.setMinimumWidth(AppConstants.PREVIEW_PANEL_WIDTH)
         self.setMaximumWidth(380)
@@ -180,9 +181,7 @@ class PreviewPanel(QWidget):
             value_widget.setStyleSheet(f"color: {color};")
 
         if selectable:
-            value_widget.setTextInteractionFlags(
-                Qt.TextInteractionFlag.TextSelectableByMouse
-            )
+            value_widget.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self._content_layout.addWidget(value_widget)
 
