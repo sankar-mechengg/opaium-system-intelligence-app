@@ -12,7 +12,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QApplication,
@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QSizePolicy,
     QVBoxLayout,
+    QWidget,
 )
 
 from src.ui.chat.message_bubble import StyledBubbleFrame
@@ -30,7 +31,7 @@ from src.ui.chat.message_bubble import StyledBubbleFrame
 class ChatContextCard(QFrame):
     """Compact card showing the file/folder context for an AI question."""
 
-    def __init__(self, path: str, parent=None) -> None:
+    def __init__(self, path: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._path = path
         self.setObjectName("chatContextCard")
@@ -113,7 +114,7 @@ class ChatContextCard(QFrame):
 
         outer.addWidget(card)
 
-    def _on_context_menu(self, pos) -> None:
+    def _on_context_menu(self, pos: QPoint) -> None:
         """Show context menu (same as explorer cards, minus Ask AI)."""
         path_obj = Path(self._path)
         is_folder = path_obj.is_dir()

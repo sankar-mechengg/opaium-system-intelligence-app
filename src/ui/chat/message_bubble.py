@@ -11,7 +11,17 @@ from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import QRectF, Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPixmap
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QPainter,
+    QPaintEvent,
+    QPen,
+    QPixmap,
+    QResizeEvent,
+    QShowEvent,
+)
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -46,7 +56,7 @@ class ChatMessage:
 class StyledBubbleFrame(QFrame):
     """QFrame subclass that properly paints QSS backgrounds and borders."""
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QPaintEvent) -> None:
         from PySide6.QtWidgets import QStyle, QStyleOption
 
         opt = QStyleOption()
@@ -67,7 +77,7 @@ class RoundAvatar(QWidget):
         self.setFixedSize(self.SIZE, self.SIZE)
         self.setObjectName(f"chatAvatar_{role}")
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
@@ -145,8 +155,9 @@ class MarkdownBrowser(QTextBrowser):
         """QTextDocument needs an explicit width to wrap paragraphs and size correctly."""
         w = self.viewport().width()
         if w < 80:
-            if self.parent():
-                pw = self.parent().width()
+            parent_w = self.parentWidget()
+            if parent_w is not None:
+                pw = parent_w.width()
                 if pw > 80:
                     w = max(80, pw - 80)
             if w < 80:
@@ -160,11 +171,11 @@ class MarkdownBrowser(QTextBrowser):
         self.setMinimumHeight(doc_height)
         self.setMaximumHeight(doc_height)
 
-    def showEvent(self, event) -> None:
+    def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
         QTimer.singleShot(0, self._sync_layout)
 
-    def resizeEvent(self, event) -> None:
+    def resizeEvent(self, event: QResizeEvent) -> None:
         super().resizeEvent(event)
         self._sync_layout()
 

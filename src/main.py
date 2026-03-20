@@ -88,13 +88,15 @@ def main() -> int:
         except Exception as e:
             logger.debug(f"Could not set Windows App ID: {e}")
 
-    # Prevent multiple instances
+    # Prevent multiple instances — if already running, ask the first instance to show itself
     from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
     socket = QLocalSocket()
     socket.connectToServer(AppConstants.APP_NAME)
     if socket.waitForConnected(500):
-        logger.warning("Another instance is already running. Exiting.")
+        logger.warning("Another instance is already running. Signalling it to show.")
+        socket.write(b"show")
+        socket.waitForBytesWritten(1000)
         socket.close()
         return 0
     socket.close()
@@ -109,6 +111,16 @@ def main() -> int:
     # Create and run the application
     opaium_app = OpAIUMApp(app, config)
     opaium_app.initialize()
+
+    # When another instance connects, bring the existing window to front
+    def _on_new_connection() -> None:
+        client = server.nextPendingConnection()
+        if client:
+            client.waitForReadyRead(1000)
+            opaium_app.raise_window()
+            client.close()
+
+    server.newConnection.connect(_on_new_connection)
 
     exit_code = app.exec()
 

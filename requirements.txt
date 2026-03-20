@@ -1,5 +1,6 @@
 # Sync: pip freeze from .venv. Do not add python-msilib (not on PyPI).
 aiosqlite==0.22.1
+altgraph==0.17.5
 annotated-types==0.7.0
 anyio==4.12.1
 argon2-cffi==25.1.0
@@ -39,6 +40,7 @@ packaging==26.0
 pathspec==1.0.4
 pdfminer.six==20251230
 pdfplumber==0.11.9
+pefile==2024.8.26
 pillow==12.1.1
 platformdirs==4.9.2
 pluggy==1.6.0
@@ -47,6 +49,8 @@ pydantic==2.12.5
 pydantic-settings==2.13.1
 pydantic_core==2.41.5
 Pygments==2.19.2
+pyinstaller==6.19.0
+pyinstaller-hooks-contrib==2026.3
 pylnk3==0.4.3
 pypdfium2==5.5.0
 PySide6==6.10.2
@@ -62,6 +66,7 @@ python-magic-bin==0.4.14
 python-pptx==1.0.2
 pytokens==0.4.1
 pywin32==311
+pywin32-ctypes==0.2.3
 ruff==0.15.2
 scipy==1.17.0
 Send2Trash==2.1.0

@@ -15,7 +15,9 @@ class TestOperationJournal:
     @pytest.fixture
     def journal(self, tmp_path: Path):
         db_path = tmp_path / "test_undo.db"
-        return OperationJournal(db_path=db_path)
+        j = OperationJournal(db_path=db_path)
+        yield j
+        j.close()
 
     def test_record_operation(self, journal: OperationJournal):
         op = Operation(
@@ -76,7 +78,9 @@ class TestOperationJournal:
 class TestUndoManager:
     @pytest.fixture
     def manager(self, tmp_path: Path):
-        return UndoManager(OperationJournal(db_path=tmp_path / "undo.db"))
+        journal = OperationJournal(db_path=tmp_path / "undo.db")
+        yield UndoManager(journal)
+        journal.close()
 
     def test_undo_rename(self, tmp_path: Path, manager: UndoManager):
         new_path = tmp_path / "renamed.txt"

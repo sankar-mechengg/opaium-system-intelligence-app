@@ -8,7 +8,7 @@ and notification counts.
 from __future__ import annotations
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QBrush, QColor, QFont, QPainter
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPaintEvent
 from PySide6.QtWidgets import QLabel, QWidget
 
 
@@ -101,7 +101,7 @@ class StatusDot(QWidget):
         self._color = QColor(self.COLORS.get(color, color))
         self.update()
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setPen(Qt.PenStyle.NoPen)

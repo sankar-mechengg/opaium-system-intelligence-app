@@ -173,7 +173,7 @@ class FileScanner:
         try:
             stat = entry.stat(follow_symlinks=False)
             ext = Path(entry.name).suffix.lstrip(".").lower()
-            type_info = FileItem.classify_extension(ext)
+            ti = FileItem.classify_extension(ext)
 
             return FileItem(
                 path=entry.path,
@@ -184,7 +184,11 @@ class FileScanner:
                 created_at=datetime.fromtimestamp(stat.st_ctime),
                 modified_at=datetime.fromtimestamp(stat.st_mtime),
                 accessed_at=datetime.fromtimestamp(stat.st_atime),
-                **type_info,
+                is_image=ti["is_image"],
+                is_document=ti["is_document"],
+                is_video=ti["is_video"],
+                is_audio=ti["is_audio"],
+                is_archive=ti["is_archive"],
             )
         except (OSError, PermissionError):
             return None
@@ -273,7 +277,7 @@ class FileScanner:
                         if size >= min_size_bytes:
                             stat = os.stat(fpath)
                             ext = Path(fname).suffix.lstrip(".").lower()
-                            type_info = FileItem.classify_extension(ext)
+                            ti = FileItem.classify_extension(ext)
                             large_files.append(
                                 FileItem(
                                     path=fpath,
@@ -282,7 +286,11 @@ class FileScanner:
                                     parent_path=dirpath,
                                     size_bytes=size,
                                     modified_at=datetime.fromtimestamp(stat.st_mtime),
-                                    **type_info,
+                                    is_image=ti["is_image"],
+                                    is_document=ti["is_document"],
+                                    is_video=ti["is_video"],
+                                    is_audio=ti["is_audio"],
+                                    is_archive=ti["is_archive"],
                                 )
                             )
                     except (OSError, PermissionError):

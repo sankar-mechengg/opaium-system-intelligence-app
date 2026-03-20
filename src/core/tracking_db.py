@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from pathlib import Path
 
@@ -272,3 +272,7 @@ class TrackingDB:
         if self._connection:
             self._connection.close()
             self._connection = None
+
+    def __del__(self) -> None:
+        with suppress(Exception):
+            self.close()

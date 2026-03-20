@@ -34,6 +34,10 @@ class UndoManager:
     def __init__(self, journal: OperationJournal) -> None:
         self._journal = journal
 
+    def close(self) -> None:
+        """Close the underlying journal database connection."""
+        self._journal.close()
+
     def get_recent_operations(self, limit: int = 50) -> list[Operation]:
         """
         Get recent operations from the journal.

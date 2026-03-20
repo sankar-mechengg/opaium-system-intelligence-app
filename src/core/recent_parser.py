@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from loguru import logger
 
@@ -26,7 +27,7 @@ class RecentParser:
     files and folders with their timestamps.
     """
 
-    def __init__(self, tracking_db=None) -> None:
+    def __init__(self, tracking_db: Any | None = None) -> None:
         self._recent_dir = AppConstants.WINDOWS_RECENT_DIR
         self._cache: dict[str, RecentItem] = {}
         self._tracking_db = tracking_db
@@ -300,7 +301,7 @@ class RecentParser:
         self,
         current_path: Path,
         accessed_at: datetime,
-        tracked_record,
+        tracked_record: Any,
     ) -> RecentItem:
         """Create a RecentItem from a resolved path."""
         is_dir = current_path.is_dir()

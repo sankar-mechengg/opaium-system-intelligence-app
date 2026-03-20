@@ -8,10 +8,12 @@ Used for "Last 2 Days", "Last Week", "Last Month" groups.
 from __future__ import annotations
 
 from PySide6.QtCore import (
+    QEvent,
+    QObject,
     Qt,
     Signal,
 )
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QMouseEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -58,7 +60,7 @@ class CollapsibleSection(QWidget):
         self._header.setObjectName("collapsibleHeader")
         self._header.setCursor(Qt.CursorShape.PointingHandCursor)
         self._header.setFixedHeight(40)
-        self._header.mousePressEvent = self._on_header_click
+        self._header.installEventFilter(self)
 
         header_layout = QHBoxLayout(self._header)
         header_layout.setContentsMargins(12, 0, 12, 0)
@@ -113,9 +115,10 @@ class CollapsibleSection(QWidget):
     def clear_content(self) -> None:
         """Remove all widgets from the content area."""
         while self._content_layout.count():
-            item = self._content_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            li = self._content_layout.takeAt(0)
+            w = li.widget() if li is not None else None
+            if w is not None:
+                w.deleteLater()
 
     def set_count(self, count: int) -> None:
         """Update the item count badge."""
@@ -159,5 +162,10 @@ class CollapsibleSection(QWidget):
         if self._expanded:
             self.toggle()
 
-    def _on_header_click(self, event) -> None:
-        self.toggle()
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if watched is self._header and event.type() == QEvent.Type.MouseButtonPress:
+            me = event
+            if isinstance(me, QMouseEvent) and me.button() == Qt.MouseButton.LeftButton:
+                self.toggle()
+                return True
+        return super().eventFilter(watched, event)

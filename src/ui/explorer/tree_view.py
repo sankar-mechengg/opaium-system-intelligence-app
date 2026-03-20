@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from PySide6.QtCore import QModelIndex, Qt, Signal
+from PySide6.QtCore import QModelIndex, QPoint, Qt, Signal
 from PySide6.QtGui import QFont, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -206,7 +206,7 @@ class FolderTreeView(QWidget):
             if path:
                 self.folder_double_clicked.emit(path)
 
-    def _on_context_menu(self, pos) -> None:
+    def _on_context_menu(self, pos: QPoint) -> None:
         """Handle right-click on tree item."""
         index = self._tree.indexAt(pos)
         if not index.isValid():

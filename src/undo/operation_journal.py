@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from pathlib import Path
 
@@ -210,6 +210,26 @@ class OperationJournal:
                 (reason, op_id),
             )
 
+    def delete_operation(self, op_id: int) -> bool:
+        """Delete a single operation and its file mappings."""
+        with self._cursor() as cursor:
+            cursor.execute("DELETE FROM operations WHERE id = ?", (op_id,))
+            deleted = cursor.rowcount > 0
+            if deleted:
+                logger.info(f"Deleted operation #{op_id} from journal.")
+            return deleted
+
+    def clear_all(self) -> int:
+        """Delete every operation and its file mappings. Returns count removed."""
+        with self._cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as cnt FROM operations")
+            count = cursor.fetchone()["cnt"]
+            cursor.execute("DELETE FROM file_mappings")
+            cursor.execute("DELETE FROM operations")
+            if count:
+                logger.info(f"Cleared all {count} operations from journal.")
+            return count
+
     def purge_old(self, days: int = AppConstants.UNDO_PURGE_DAYS) -> int:
         """
         Remove operations older than the specified number of days.
@@ -288,3 +308,7 @@ class OperationJournal:
         if self._connection:
             self._connection.close()
             self._connection = None
+
+    def __del__(self) -> None:
+        with suppress(Exception):
+            self.close()

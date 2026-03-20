@@ -12,7 +12,7 @@ Orchestrates the application lifecycle:
 from __future__ import annotations
 
 from loguru import logger
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
@@ -122,16 +122,17 @@ class OpAIUMApp:
 
     def _setup_tray(self) -> None:
         """Setup the system tray icon with context menu."""
-        if not self._config.settings.startup.minimize_to_tray:
-            return
-
-        icon_path = AppConstants.LOGO_PATH
-        icon = QIcon(str(icon_path)) if icon_path.exists() else QIcon()
+        # Prefer .ico for crisp Windows tray rendering
+        if AppConstants.LOGO_ICO_PATH.exists():
+            icon = QIcon(str(AppConstants.LOGO_ICO_PATH))
+        elif AppConstants.LOGO_PATH.exists():
+            icon = QIcon(str(AppConstants.LOGO_PATH))
+        else:
+            icon = QIcon()
 
         self._tray_icon = QSystemTrayIcon(icon, self._qt_app)
         self._tray_icon.setToolTip(f"{AppConstants.APP_NAME} — System Intelligence Tool")
 
-        # Context menu
         menu = QMenu()
 
         show_action = QAction("Show OP(AI)UM", menu)
@@ -183,10 +184,17 @@ class OpAIUMApp:
                 2000,
             )
 
+    def raise_window(self) -> None:
+        """Bring the main window to the foreground (called from single-instance handler)."""
+        self._show_main_window()
+
     def _show_main_window(self) -> None:
-        """Restore the main window from tray."""
+        """Restore the main window from tray or minimized state."""
         if self._main_window:
             self._main_window.show()  # type: ignore[attr-defined]
+            self._main_window.setWindowState(  # type: ignore[attr-defined]
+                self._main_window.windowState() & ~Qt.WindowState.WindowMinimized  # type: ignore[attr-defined]
+            )
             self._main_window.raise_()  # type: ignore[attr-defined]
             self._main_window.activateWindow()  # type: ignore[attr-defined]
 
@@ -212,4 +220,6 @@ class OpAIUMApp:
             self._refresh_timer.stop()
         if self._tray_icon:
             self._tray_icon.hide()
+        if self._main_window and hasattr(self._main_window, "force_close"):
+            self._main_window.force_close()  # type: ignore[attr-defined]
         self._qt_app.quit()

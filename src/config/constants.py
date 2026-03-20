@@ -17,8 +17,8 @@ class AppConstants:
     APP_NAME = "OP(AI)UM"
     APP_FULL_NAME = "Omniscient Processor for Adaptive Intelligence & Unified Management"
     APP_VERSION = "1.0.0"
-    APP_AUTHOR = "Sankar"
-    APP_ORG = "Veyon Ideations Private Limited"
+    APP_AUTHOR = "Sankar Balasubramanian"
+    APP_ORG = "Sankar Balasubramanian"
 
     # === Paths ===
     # Base directory of the application (handles both dev and frozen .exe)

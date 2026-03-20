@@ -270,6 +270,7 @@ class FolderMonitor(QObject):
                 # For now, fall back to scanning
                 logger.debug(f"File ID relocation not fully implemented. file_id={file_id}, drive={letter}:")
                 return None
+            return None
 
         except Exception as e:
             logger.debug(f"File ID relocation failed: {e}")

@@ -8,7 +8,7 @@ with item counts and expand/collapse functionality.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QMouseEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from src.utils.time_utils import TimeGroup
@@ -97,7 +97,7 @@ class GroupHeader(QWidget):
         self._expanded = expanded
         self._arrow.setText("▼" if expanded else "▶")
 
-    def mousePressEvent(self, event) -> None:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._expanded = not self._expanded
             self._arrow.setText("▼" if self._expanded else "▶")

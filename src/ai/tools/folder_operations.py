@@ -182,7 +182,7 @@ class FolderOperationsTool(BaseTool):
                 timestamp=datetime.now(),
                 operation_type="create_folder",
                 description=f"Created folder: {path.name}",
-                destination_paths=[str(path)],
+                dest_paths=[str(path)],
                 is_undoable=True,
             )
 
@@ -257,7 +257,7 @@ class FolderOperationsTool(BaseTool):
                 operation_type="move_folder",
                 description=f"Moved folder: {source.name} to {dest_path.parent.name}",
                 source_paths=[str(source)],
-                destination_paths=[str(dest_path)],
+                dest_paths=[str(dest_path)],
                 is_undoable=True,
             )
 
@@ -299,7 +299,7 @@ class FolderOperationsTool(BaseTool):
                 operation_type="copy_folder",
                 description=f"Copied folder: {source.name} to {dest_path.parent.name}",
                 source_paths=[str(source)],
-                destination_paths=[str(dest_path)],
+                dest_paths=[str(dest_path)],
                 is_undoable=False,
             )
 
@@ -333,7 +333,7 @@ class FolderOperationsTool(BaseTool):
                 operation_type="rename_folder",
                 description=f"Renamed folder: {source.name} -> {dest_path.name}",
                 source_paths=[str(source)],
-                destination_paths=[str(dest_path)],
+                dest_paths=[str(dest_path)],
                 is_undoable=True,
             )
 

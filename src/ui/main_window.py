@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from loguru import logger
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QCloseEvent, QIcon, QResizeEvent
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 
 from src.config.config_manager import ConfigManager
 from src.config.constants import AppConstants
+from src.core.models import RecentItem
 from src.ui.chat.chat_panel import ChatPanel
 from src.ui.explorer.explorer_panel import ExplorerPanel
 from src.ui.history.history_panel import HistoryPanel
@@ -50,6 +51,7 @@ class MainWindow(QMainWindow):
         self._operation_journal = OperationJournal()
         self._undo_manager = UndoManager(self._operation_journal)
         self._is_maximized = False
+        self._force_close = False
 
         self._setup_window()
         self._build_ui()
@@ -68,8 +70,10 @@ class MainWindow(QMainWindow):
         )
         self.resize(1280, 800)
 
-        # Frameless with resize support
-        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
+        # Frameless with resize support; MinMaxButtonsHint keeps the taskbar entry visible
+        self.setWindowFlags(
+            Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowMinMaxButtonsHint
+        )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         # Icon
@@ -159,12 +163,15 @@ class MainWindow(QMainWindow):
 
     def _apply_theme(self, theme_name: str) -> None:
         """Apply a theme stylesheet."""
-        theme_file = AppConstants.THEMES_DIR / f"{theme_name}.qss"
+        name = theme_name.value if hasattr(theme_name, "value") else str(theme_name)
+        theme_file = AppConstants.THEMES_DIR / f"{name}.qss"
         if theme_file.exists():
             try:
                 stylesheet = theme_file.read_text(encoding="utf-8")
-                QApplication.instance().setStyleSheet(stylesheet)
-                logger.info(f"Theme applied: {theme_name}")
+                app = QApplication.instance()
+                if isinstance(app, QApplication):
+                    app.setStyleSheet(stylesheet)
+                logger.info(f"Theme applied: {name}")
             except Exception as e:
                 logger.error(f"Failed to apply theme: {e}")
         else:
@@ -178,7 +185,7 @@ class MainWindow(QMainWindow):
 
     # === Item Selection ===
 
-    def _on_item_selected(self, item) -> None:
+    def _on_item_selected(self, item: RecentItem) -> None:
         """Pass selected item context to chat panel."""
         if item.is_folder:
             self._chat.set_folder_context(item.path)
@@ -217,10 +224,7 @@ class MainWindow(QMainWindow):
     # === Window Controls ===
 
     def _on_minimize(self) -> None:
-        if self._config.settings.startup.minimize_to_tray:
-            self.hide()
-        else:
-            self.showMinimized()
+        self.showMinimized()
 
     def _on_maximize(self) -> None:
         if self._is_maximized:
@@ -234,6 +238,7 @@ class MainWindow(QMainWindow):
             self._is_maximized = True
             for g in self._resize_grips:
                 g.hide()
+        self._title_bar.update_maximize_icon(self._is_maximized)
 
     def _on_close(self) -> None:
         """Close or minimize to tray."""
@@ -286,12 +291,21 @@ class MainWindow(QMainWindow):
             grip.setGeometry(x, y, max(1, gw), max(1, gh))
             grip.raise_()
 
-    def resizeEvent(self, event) -> None:
+    def resizeEvent(self, event: QResizeEvent) -> None:
         """Update resize grip positions."""
         super().resizeEvent(event)
         self._update_resize_grips()
 
-    def closeEvent(self, event) -> None:
-        """Handle window close."""
-        logger.info("Main window closing.")
-        event.accept()
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """Intercept close to minimize to tray when configured."""
+        if self._config.settings.startup.minimize_to_tray and not self._force_close:
+            event.ignore()
+            self.hide()
+        else:
+            logger.info("Main window closing.")
+            event.accept()
+
+    def force_close(self) -> None:
+        """Actually close the window (called from tray Quit action)."""
+        self._force_close = True
+        self.close()

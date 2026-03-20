@@ -8,7 +8,7 @@ for GPT response.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QFont, QPainter
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPaintEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 
@@ -25,7 +25,7 @@ class TypingDot(QWidget):
         self._opacity = opacity
         self.update()
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         color = QColor(self._color)

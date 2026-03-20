@@ -40,11 +40,11 @@ class ConfigManager:
         """Singleton pattern — one config manager across the app."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+            cls._instance._initialized = False  # type: ignore[attr-defined]
         return cls._instance
 
     def __init__(self) -> None:
-        if self._initialized:  # type: ignore[has-type]
+        if getattr(self, "_initialized", False):
             return
         self._initialized = True
         self._crypto = CryptoManager()

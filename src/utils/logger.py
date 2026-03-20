@@ -24,18 +24,19 @@ def setup_logger(log_level: str = "INFO") -> None:
     # Remove default loguru handler
     logger.remove()
 
-    # Console handler (colored, concise)
-    logger.add(
-        sys.stderr,
-        level=log_level,
-        format=(
-            "<green>{time:HH:mm:ss}</green> | "
-            "<level>{level: <8}</level> | "
-            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
-            "<level>{message}</level>"
-        ),
-        colorize=True,
-    )
+    # Console handler — only when a real stderr exists (PyInstaller --windowed sets it to None)
+    if sys.stderr is not None:
+        logger.add(
+            sys.stderr,
+            level=log_level,
+            format=(
+                "<green>{time:HH:mm:ss}</green> | "
+                "<level>{level: <8}</level> | "
+                "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+                "<level>{message}</level>"
+            ),
+            colorize=True,
+        )
 
     # Ensure log directory exists
     AppConstants.ensure_dirs()

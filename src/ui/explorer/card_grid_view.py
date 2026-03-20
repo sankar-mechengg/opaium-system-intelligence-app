@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from loguru import logger
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (
     QFrame,
     QScrollArea,
@@ -55,7 +56,8 @@ class FlowLayout(QWidget):
         x = 0
         y = 0
         row_height = 0
-        available_width = max(self.parentWidget().width() - 20 if self.parentWidget() else 800, 400)
+        pw = self.parentWidget()
+        available_width = max((pw.width() - 20) if pw is not None else 800, 400)
 
         for widget in visible:
             w = widget.width()
@@ -74,7 +76,7 @@ class FlowLayout(QWidget):
         total_height = y + row_height + self._spacing
         self.setFixedHeight(total_height)
 
-    def resizeEvent(self, event) -> None:
+    def resizeEvent(self, event: QResizeEvent) -> None:
         self._relayout()
         super().resizeEvent(event)
 

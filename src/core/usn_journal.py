@@ -236,7 +236,7 @@ class USNJournalReader:
                 logger.debug(f"Cannot open volume {self._volume_path}")
                 return None
 
-            return handle
+            return int(handle)
         except Exception as e:
             logger.debug(f"Failed to open volume: {e}")
             return None

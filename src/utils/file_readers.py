@@ -106,7 +106,7 @@ def _read_docx(path: Path, max_chars: int) -> str | None:
     try:
         from docx import Document
 
-        doc = Document(path)
+        doc = Document(str(path))
         parts = []
         for para in doc.paragraphs:
             if para.text.strip():
@@ -128,7 +128,7 @@ def _read_pptx(path: Path, max_chars: int) -> str | None:
     try:
         from pptx import Presentation
 
-        prs = Presentation(path)
+        prs = Presentation(str(path))
         parts = []
         for slide in prs.slides:
             for shape in slide.shapes:
@@ -211,7 +211,7 @@ def _write_docx(path: Path, content: str) -> bool:
             para = doc.add_paragraph(line)
             para.paragraph_format.space_after = Pt(6)
         path.parent.mkdir(parents=True, exist_ok=True)
-        doc.save(path)
+        doc.save(str(path))
         return True
     except ImportError:
         return False

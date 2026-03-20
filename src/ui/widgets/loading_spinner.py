@@ -8,7 +8,7 @@ scanning, API calls, and other async operations.
 from __future__ import annotations
 
 from PySide6.QtCore import QRectF, QSize, Qt, QTimer
-from PySide6.QtGui import QColor, QConicalGradient, QPainter, QPen
+from PySide6.QtGui import QColor, QConicalGradient, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import QWidget
 
 
@@ -56,7 +56,7 @@ class LoadingSpinner(QWidget):
         self._angle = (self._angle + 5) % 360
         self.update()
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         if not self._is_spinning:
             return
 

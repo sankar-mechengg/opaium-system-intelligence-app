@@ -188,9 +188,10 @@ class PreviewPanel(QWidget):
     def _clear_content(self) -> None:
         """Remove all content widgets."""
         while self._content_layout.count():
-            item = self._content_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            li = self._content_layout.takeAt(0)
+            w = li.widget() if li is not None else None
+            if w is not None:
+                w.deleteLater()
 
     def clear(self) -> None:
         """Reset to empty state."""

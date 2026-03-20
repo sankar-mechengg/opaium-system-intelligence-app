@@ -31,6 +31,7 @@ class HistoryRow(QFrame):
     """
 
     undo_clicked = Signal(int)
+    delete_clicked = Signal(int)
 
     # Operation type icons
     TYPE_ICONS = {
@@ -131,3 +132,11 @@ class HistoryRow(QFrame):
             no_undo.setFixedWidth(30)
             no_undo.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(no_undo)
+
+        delete_btn = QPushButton("✕")
+        delete_btn.setObjectName("historyDeleteBtn")
+        delete_btn.setFixedSize(28, 28)
+        delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        delete_btn.setToolTip("Delete this entry")
+        delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self._operation_id))
+        layout.addWidget(delete_btn)

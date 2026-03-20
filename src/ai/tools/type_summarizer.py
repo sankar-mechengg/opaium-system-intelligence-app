@@ -81,7 +81,7 @@ class TypeSummarizerTool(BaseTool):
         # Sort by count descending
         sorted_types = sorted(type_data.items(), key=lambda x: x[1]["count"], reverse=True)
 
-        summary = []
+        summary: list[dict[str, float | int | str]] = []
         for ext, info in sorted_types:
             summary.append(
                 {
@@ -97,7 +97,8 @@ class TypeSummarizerTool(BaseTool):
             f"File type summary for {Path(path).name} ({total_files} files, {PathUtils.format_size(total_size)}):",
         ]
         for item in summary[:15]:
-            bar = "█" * max(1, int(item["percentage"] / 5))
+            pct = float(item["percentage"])
+            bar = "█" * max(1, int(pct / 5))
             lines.append(
                 f"  .{item['extension']:12s}  {item['count']:5d} files  "
                 f"{item['display_size']:>10s}  {bar} {item['percentage']}%"

@@ -11,6 +11,7 @@ Main AI chat interface combining:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from loguru import logger
 from PySide6.QtCore import Qt, QTimer, Signal
@@ -27,6 +28,8 @@ from PySide6.QtWidgets import (
 from src.ai.ai_engine import AIEngine
 from src.ai.conversation_db import ConversationDB
 from src.ai.conversation_manager import ConversationManager
+from src.ai.openai_client import OpenAIClient
+from src.ai.response_parser import ParsedResponse
 from src.ai.speech_recorder import SpeechRecorder
 from src.ai.speech_transcriber import SpeechTranscriber
 from src.config.config_manager import ConfigManager
@@ -213,7 +216,7 @@ class ChatPanel(QWidget):
         self._typing.stop()
         self._input_bar.set_enabled(True)
 
-    def _on_ai_response(self, parsed_response) -> None:
+    def _on_ai_response(self, parsed_response: ParsedResponse) -> None:
         """Handle AI response - skip if it's an error (handled by _on_ai_error)."""
         try:
             if parsed_response.is_error:
@@ -229,7 +232,7 @@ class ChatPanel(QWidget):
     def _on_tool_executing(self, tool_name: str) -> None:
         self._add_system_message(f"Executing: {tool_name}...")
 
-    def _on_approval_needed(self, description: str, plan_steps: list) -> None:
+    def _on_approval_needed(self, description: str, plan_steps: list[Any]) -> None:
         plan_text = "\n".join(f"  {i + 1}. {step}" for i, step in enumerate(plan_steps))
         message = f"{description}\n\nPlan:\n{plan_text}\n\nType 'yes' to proceed or 'no' to cancel."
         self._add_system_message(message)
@@ -267,11 +270,18 @@ class ChatPanel(QWidget):
         else:
             self._stop_recording()
 
+    def _ensure_speech_recorder(self) -> SpeechRecorder:
+        if self._speech_recorder is None:
+            rec = SpeechRecorder()
+            rec.transcription_ready.connect(self._on_recording_wav_ready)
+            rec.error.connect(lambda e: self._add_system_message(f"Recording error: {e}"))
+            self._speech_recorder = rec
+        return self._speech_recorder
+
     def _start_recording(self) -> None:
         try:
-            if self._speech_recorder is None:
-                self._speech_recorder = SpeechRecorder()
-            self._speech_recorder.start_recording()
+            rec = self._ensure_speech_recorder()
+            rec.start()
             self._add_system_message("Recording... Click the mic to stop.")
         except Exception as e:
             logger.error(f"Recording error: {e}")
@@ -280,24 +290,24 @@ class ChatPanel(QWidget):
 
     def _stop_recording(self) -> None:
         if self._speech_recorder:
-            audio_data = self._speech_recorder.stop_recording()
-            if audio_data:
-                self._transcribe_audio(audio_data)
+            self._speech_recorder.stop()
 
-    def _transcribe_audio(self, audio_data) -> None:
-        api_key = self._config.get_api_key()
-        if not api_key:
+    def _on_recording_wav_ready(self, wav_path: str) -> None:
+        self._transcribe_wav_path(wav_path)
+
+    def _transcribe_wav_path(self, wav_path: str) -> None:
+        if not self._config.get_api_key():
             self._add_system_message("API key required for speech transcription.")
             return
 
         if self._speech_transcriber is None:
-            self._speech_transcriber = SpeechTranscriber(api_key)
-            self._speech_transcriber.transcription_ready.connect(self._on_transcription)
+            self._speech_transcriber = SpeechTranscriber(OpenAIClient(self._config))
+            self._speech_transcriber.transcription_complete.connect(self._on_transcription)
             self._speech_transcriber.transcription_error.connect(
                 lambda e: self._add_system_message(f"Transcription error: {e}")
             )
 
-        self._speech_transcriber.transcribe(audio_data)
+        self._speech_transcriber.transcribe(wav_path)
 
     def _on_transcription(self, text: str) -> None:
         if text.strip():
@@ -338,10 +348,10 @@ class ChatPanel(QWidget):
     def _clear_chat(self) -> None:
         """Clear all messages from the chat UI."""
         while self._message_layout.count() > 1:  # Keep the stretch
-            item = self._message_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
+            li = self._message_layout.takeAt(0)
+            w = li.widget() if li is not None else None
+            if w is not None:
+                w.deleteLater()
 
     # === Conversation Management ===
 

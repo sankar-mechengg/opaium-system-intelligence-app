@@ -23,6 +23,27 @@ The script downloads [WiX Toolset 3.11](https://github.com/wixtoolset/wix3/relea
 - Per-machine install under **Program Files** (`OPAIUM\`)
 - **Start Menu** shortcut (all users)
 - Major upgrade support (same `UpgradeCode`)
+- **64-bit Windows only** (installs under `Program Files`, not `Program Files (x86)`)
+
+### Double-click “flashes” and nothing seems to happen
+
+This MSI does **not** ship a full WiX wizard UI (the package is large; a standard UI would complicate the build). Windows Installer may show only a **short** window while it works.
+
+1. **UAC** — The package requires **elevation** (`perMachine`). If you dismiss the UAC prompt, the install will stop with no visible app.
+2. **It may have succeeded** — Check **Start Menu → OP(AI)UM** and `C:\Program Files\OPAIUM\OPAIUM.exe`.
+3. **Capture a log** — From PowerShell in the repo:
+
+   ```powershell
+   ./installer/wix/install_with_log.ps1
+   ```
+
+   Or manually:
+
+   ```powershell
+   msiexec /i "C:\path\to\OPAIUM-v1.0.0-windows.msi" /l*v "$env:TEMP\opaium-msi-install.log"
+   ```
+
+   Then open `%TEMP%\opaium-msi-install.log` and search for `Return value 3` / `error` if something failed.
 
 ---
 

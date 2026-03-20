@@ -10,54 +10,88 @@
       Name="OP(AI)UM"
       Language="1033"
       Version="$(var.ProductVersion)"
-      Manufacturer="Veyon Ideations Pvt Ltd"
+      Manufacturer="Sankar Balasubramanian"
       UpgradeCode="8F3C2B1A-7E6D-49F0-8A5C-123456789ABC">
 
     <Package
-        InstallerVersion="200"
+        InstallerVersion="500"
         Compressed="yes"
         InstallScope="perMachine"
         InstallPrivileges="elevated"
+        Platform="x64"
         Description="OP(AI)UM Windows Installer"
         Comments="Installed from PyInstaller build"
-        Manufacturer="Veyon Ideations Pvt Ltd" />
+        Manufacturer="Sankar Balasubramanian" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
-    <Feature Id="ProductFeature" Title="OP(AI)UM" Level="1">
+    <!--
+      Force CommonProgramsFolder / DesktopFolder to the correct all-users paths.
+      Under the SYSTEM account the MSI service may resolve these to C:\ instead.
+    -->
+    <SetDirectory Id="CommonProgramsFolder" Value="[CommonAppDataFolder]Microsoft\Windows\Start Menu\Programs" />
+    <SetDirectory Id="DesktopFolder" Value="[WindowsVolume]Users\Public\Desktop" />
+
+    <!-- License acceptance UI (WixUI_Minimal shows a single license page) -->
+    <UIRef Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+
+    <Feature Id="ProductFeature" Title="OPAIUM" Level="1">
       <ComponentGroupRef Id="OPAIUMComponents" />
-      <ComponentRef Id="ApplicationShortcut" />
+      <ComponentRef Id="StartMenuShortcutComponent" />
+      <ComponentRef Id="DesktopShortcutComponent" />
     </Feature>
   </Product>
 
-  <!-- Install directory + all-users Start Menu folder (perMachine) -->
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLFOLDER" Name="OPAIUM" />
       </Directory>
       <Directory Id="CommonProgramsFolder">
-        <Directory Id="ApplicationProgramsFolder" Name="OP(AI)UM" />
+        <Directory Id="ApplicationProgramsFolder" Name="OPAIUM" />
       </Directory>
+      <Directory Id="DesktopFolder" />
     </Directory>
   </Fragment>
 
-  <!-- Start menu shortcut (exe comes from heat-generated components) -->
+  <!-- Start Menu shortcut -->
   <Fragment>
     <DirectoryRef Id="ApplicationProgramsFolder">
-      <Component Id="ApplicationShortcut" Guid="*">
+      <Component Id="StartMenuShortcutComponent" Guid="A1B2C3D4-E5F6-7890-ABCD-111111111111">
         <Shortcut
             Id="StartMenuShortcut"
-            Name="OP(AI)UM"
-            Description="OP(AI)UM"
+            Name="OPAIUM"
+            Description="OPAIUM System Intelligence"
             Target="[INSTALLFOLDER]OPAIUM.exe"
             WorkingDirectory="INSTALLFOLDER" />
-        <RemoveFolder Id="CleanupShortCutFolder" On="uninstall" />
+        <RemoveFolder Id="CleanupStartMenuFolder" On="uninstall" />
         <RegistryValue
             Root="HKLM"
-            Key="Software\VeyonIdeations\OPAIUM"
-            Name="InstallerShortcut"
+            Key="Software\SankarBalasubramanian\OPAIUM"
+            Name="StartMenuShortcut"
+            Type="integer"
+            Value="1"
+            KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+
+  <!-- Desktop shortcut -->
+  <Fragment>
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcutComponent" Guid="A1B2C3D4-E5F6-7890-ABCD-222222222222">
+        <Shortcut
+            Id="DesktopShortcut"
+            Name="OPAIUM"
+            Description="OPAIUM System Intelligence"
+            Target="[INSTALLFOLDER]OPAIUM.exe"
+            WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue
+            Root="HKCU"
+            Key="Software\SankarBalasubramanian\OPAIUM"
+            Name="DesktopShortcut"
             Type="integer"
             Value="1"
             KeyPath="yes" />

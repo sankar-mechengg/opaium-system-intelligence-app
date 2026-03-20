@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.utils.time_utils import TimeGroup
 
@@ -29,6 +29,8 @@ class RecentItem(BaseModel):
 
     This is the primary data model used in the explorer views.
     """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     path: str
     name: str
@@ -53,9 +55,6 @@ class RecentItem(BaseModel):
     # Display
     icon_key: str = ""  # Cache key for icon provider
     item_count: tuple[int, int] | None = None  # (folders, files) for folders
-
-    class Config:
-        arbitrary_types_allowed = True
 
     @property
     def display_size(self) -> str:

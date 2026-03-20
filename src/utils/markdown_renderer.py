@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import html
 import re
+from typing import cast
 
 from loguru import logger
 
@@ -48,7 +49,7 @@ def _highlight_code(code: str, language: str) -> str:
             style="monokai",
             prestyles="margin:0; white-space:pre-wrap;",
         )
-        return highlight(code, lexer, formatter)
+        return cast(str, highlight(code, lexer, formatter))
     except ImportError:
         return html.escape(code)
 
@@ -106,16 +107,16 @@ def _style_inline_code(body_html: str) -> str:
         "padding:1px 5px; font-family:Consolas,'Cascadia Code',monospace; font-size:9pt;"
     )
 
-    def repl(m: re.Match) -> str:
+    def repl(m: re.Match[str]) -> str:
         attrs = (m.group(1) or "").strip()
-        content = m.group(2)
+        content = m.group(2) or ""
         if "style=" in attrs:
-            return m.group(0)
+            return str(m.group(0))
         if attrs:
             return f'<code {attrs} style="{style}">{content}</code>'
         return f'<code style="{style}">{content}</code>'
 
-    return re.sub(r"<code([^>]*)>(.*?)</code>", repl, body_html, flags=re.DOTALL)
+    return cast(str, re.sub(r"<code([^>]*)>(.*?)</code>", repl, body_html, flags=re.DOTALL))
 
 
 def markdown_to_html(text: str) -> str:

@@ -13,6 +13,8 @@ from typing import Any
 
 from loguru import logger
 
+from src.ai.tools.base_tool import BaseTool
+
 
 class ToolDefinition:
     """A registered tool with its schema and implementation."""
@@ -146,34 +148,34 @@ class FunctionRegistry:
         from src.ai.tools.startup_tool import StartupTool
         from src.ai.tools.type_summarizer import TypeSummarizerTool
 
-        # Instantiate and register all tools
-        tool_classes = [
-            FileCounterTool,
-            FileSizerTool,
-            TypeSummarizerTool,
-            DuplicateFinderTool,
-            LargeFileFinderTool,
-            EmptyFolderCleanerTool,
-            FileAgeAnalyzerTool,
-            FileRenamerTool,
-            FileDeleterTool,
-            FileMoverTool,
-            FileCopierTool,
-            SmartOrganizerTool,
-            DateOrganizerTool,
-            FolderFlattenerTool,
-            RegexRenamerTool,
-            ExtensionChangerTool,
-            MetadataReaderTool,
-            RecycleBinTool,
-            StartupTool,
-            DiskUsageTool,
-            FolderOperationsTool,
-            FileContentTool,
+        # Factories avoid instantiating via abstract type[type[BaseTool]] (mypy).
+        tool_factories: list[Callable[[], BaseTool]] = [
+            lambda: FileCounterTool(),
+            lambda: FileSizerTool(),
+            lambda: TypeSummarizerTool(),
+            lambda: DuplicateFinderTool(),
+            lambda: LargeFileFinderTool(),
+            lambda: EmptyFolderCleanerTool(),
+            lambda: FileAgeAnalyzerTool(),
+            lambda: FileRenamerTool(),
+            lambda: FileDeleterTool(),
+            lambda: FileMoverTool(),
+            lambda: FileCopierTool(),
+            lambda: SmartOrganizerTool(),
+            lambda: DateOrganizerTool(),
+            lambda: FolderFlattenerTool(),
+            lambda: RegexRenamerTool(),
+            lambda: ExtensionChangerTool(),
+            lambda: MetadataReaderTool(),
+            lambda: RecycleBinTool(),
+            lambda: StartupTool(),
+            lambda: DiskUsageTool(),
+            lambda: FolderOperationsTool(),
+            lambda: FileContentTool(),
         ]
 
-        for tool_cls in tool_classes:
-            tool = tool_cls()
+        for factory in tool_factories:
+            tool = factory()
             self.register(
                 name=tool.name,
                 description=tool.description,

@@ -16,7 +16,7 @@ from PySide6.QtCore import (
     Qt,
     Signal,
 )
-from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPainter
+from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPainter, QPaintEvent
 from PySide6.QtWidgets import QWidget
 
 
@@ -95,7 +95,7 @@ class ToggleSwitch(QWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             self.setChecked(not self._checked)
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 

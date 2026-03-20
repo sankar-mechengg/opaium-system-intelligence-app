@@ -7,8 +7,8 @@ Users can create new chats, restore old ones, and delete conversations.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QAction, QFont
+from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtGui import QAction, QFont, QMouseEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -89,12 +89,12 @@ class ConversationItem(QFrame):
         self.style().unpolish(self)
         self.style().polish(self)
 
-    def mousePressEvent(self, event) -> None:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit(self._record.id)
         super().mousePressEvent(event)
 
-    def _show_context_menu(self, pos) -> None:
+    def _show_context_menu(self, pos: QPoint) -> None:
         menu = QMenu(self)
         menu.setObjectName("contextMenu")
         delete_action = QAction("Delete Conversation", menu)
@@ -184,10 +184,10 @@ class ConversationsSidebar(QWidget):
         """Reload conversations from the database."""
         # Clear existing items
         while self._list_layout.count() > 0:
-            item = self._list_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
+            li = self._list_layout.takeAt(0)
+            w = li.widget() if li is not None else None
+            if w is not None:
+                w.deleteLater()
         self._items.clear()
 
         conversations = self._db.get_conversations()

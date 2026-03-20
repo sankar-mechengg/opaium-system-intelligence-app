@@ -99,7 +99,7 @@ class RecycleBinManager:
                 flags = SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND
 
             result = ctypes.windll.shell32.SHEmptyRecycleBinW(None, None, flags)
-            success = result == 0
+            success: bool = result == 0
             if success:
                 logger.info("Recycle Bin emptied.")
             return success

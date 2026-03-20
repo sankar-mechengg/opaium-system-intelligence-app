@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -22,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from src.core.models import OperationRecord
 from src.ui.history.history_row import HistoryRow
+from src.undo.operation_models import Operation
 from src.undo.undo_manager import UndoManager
 
 
@@ -83,6 +85,14 @@ class HistoryPanel(QWidget):
         refresh_btn.clicked.connect(self.refresh)
         header_layout.addWidget(refresh_btn)
 
+        clear_btn = QPushButton("Clear All")
+        clear_btn.setObjectName("historyClearBtn")
+        clear_btn.setFixedHeight(28)
+        clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        clear_btn.setToolTip("Delete all history entries")
+        clear_btn.clicked.connect(self._on_clear_all)
+        header_layout.addWidget(clear_btn)
+
         layout.addLayout(header_layout)
 
         # Scroll area for rows
@@ -134,11 +144,12 @@ class HistoryPanel(QWidget):
             record = self._operation_to_record(operation)
             row = HistoryRow(record, operation.id or 0)
             row.undo_clicked.connect(self.undo_requested.emit)
+            row.delete_clicked.connect(self._on_delete_entry)
             self._rows.append(row)
             self._container_layout.insertWidget(self._container_layout.count() - 1, row)
 
     @staticmethod
-    def _operation_to_record(op) -> OperationRecord:
+    def _operation_to_record(op: Operation) -> OperationRecord:
         """Convert an undo Operation to an OperationRecord for display."""
         return OperationRecord(
             id=op.id,
@@ -166,6 +177,34 @@ class HistoryPanel(QWidget):
             self.refresh()
         else:
             logger.warning(f"Failed to undo operation {operation_id}: {message}")
+
+    def _on_delete_entry(self, operation_id: int) -> None:
+        """Delete a single history entry after confirmation."""
+        reply = QMessageBox.question(
+            self,
+            "Delete Entry",
+            "Delete this history entry? This cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self._undo_manager._journal.delete_operation(operation_id)
+            logger.info(f"Deleted history entry #{operation_id}")
+            self.refresh()
+
+    def _on_clear_all(self) -> None:
+        """Clear all history after confirmation."""
+        reply = QMessageBox.question(
+            self,
+            "Clear All History",
+            "Delete all operation history? This cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            count = self._undo_manager._journal.clear_all()
+            logger.info(f"Cleared {count} history entries")
+            self.refresh()
 
     def add_operation(self, operation_id: int) -> None:
         """Refresh to show a newly added operation."""

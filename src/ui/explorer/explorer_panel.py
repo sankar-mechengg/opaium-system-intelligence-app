@@ -16,7 +16,7 @@ import subprocess
 from pathlib import Path
 
 from loguru import logger
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtWidgets import (
     QSplitter,
     QVBoxLayout,
@@ -33,6 +33,7 @@ from src.ui.explorer.search_bar import SearchBar
 from src.ui.explorer.tree_view import FolderTreeView
 from src.ui.widgets.context_menu import ContextMenuBuilder
 from src.utils.thread_pool import ThreadPoolManager, Worker
+from src.utils.time_utils import TimeGroup
 
 
 class ExplorerPanel(QWidget):
@@ -130,7 +131,7 @@ class ExplorerPanel(QWidget):
         worker.signals.finished.connect(lambda: self._search_bar.stop_spinner())
         ThreadPoolManager.run(worker)
 
-    def _load_data(self) -> dict:
+    def _load_data(self) -> dict[TimeGroup, list[RecentItem]]:
         """Background: load recent items."""
         show_hidden = self._config.settings.appearance.show_hidden_folders
 
@@ -167,7 +168,7 @@ class ExplorerPanel(QWidget):
 
         return grouped
 
-    def _on_data_loaded(self, grouped: dict) -> None:
+    def _on_data_loaded(self, grouped: dict[TimeGroup, list[RecentItem]]) -> None:
         """Handle loaded data on the main thread."""
         self._card_grid.set_items(grouped)
         self._card_grid.filter_items(
@@ -176,7 +177,7 @@ class ExplorerPanel(QWidget):
         )
 
         # Add recent folders to tree
-        all_folders = []
+        all_folders: list[str] = []
         for items in grouped.values():
             all_folders.extend(item.path for item in items if item.is_folder and item.exists)
         self._tree_view.add_recent_folders(all_folders[:20])
@@ -210,7 +211,7 @@ class ExplorerPanel(QWidget):
         except Exception as e:
             logger.error(f"Failed to open item: {e}")
 
-    def _on_context_menu(self, item: RecentItem, pos) -> None:
+    def _on_context_menu(self, item: RecentItem, pos: QPoint) -> None:
         if item.is_folder:
             menu = self._context_menu.build_folder_menu(item.path, self)
         else:
@@ -228,7 +229,7 @@ class ExplorerPanel(QWidget):
         except Exception as e:
             logger.error(f"Failed to open folder: {e}")
 
-    def _on_tree_context_menu(self, path: str, pos) -> None:
+    def _on_tree_context_menu(self, path: str, pos: QPoint) -> None:
         """Handle right-click on a tree view folder."""
         if Path(path).is_dir():
             menu = self._context_menu.build_folder_menu(path, self)

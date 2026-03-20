@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.config.constants import AppConstants
 
@@ -104,6 +104,8 @@ class DefaultConfig(BaseModel):
     This is what gets serialized to the encrypted config file.
     """
 
+    model_config = ConfigDict(use_enum_values=True)
+
     appearance: AppearanceConfig = Field(default_factory=AppearanceConfig)
     refresh: RefreshConfig = Field(default_factory=RefreshConfig)
     ai: AIConfig = Field(default_factory=AIConfig)
@@ -116,6 +118,3 @@ class DefaultConfig(BaseModel):
 
     # Last known window state
     was_maximized: bool = False
-
-    class Config:
-        use_enum_values = True

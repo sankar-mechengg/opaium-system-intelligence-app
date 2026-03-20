@@ -12,6 +12,7 @@ import ctypes
 import ctypes.wintypes
 import os
 from pathlib import Path
+from typing import cast
 
 from loguru import logger
 
@@ -57,8 +58,8 @@ class WindowsAPI:
 
                 target_path, _ = shortcut.GetPath(shell.SLGP_RAWPATH)
 
-                if target_path and os.path.exists(target_path):
-                    return target_path
+                if target_path and os.path.exists(str(target_path)):
+                    return cast(str, target_path)
                 return None
             finally:
                 pythoncom.CoUninitialize()
@@ -77,13 +78,13 @@ class WindowsAPI:
 
             lnk = pylnk3.parse(str(lnk_path))
             target = lnk.path
-            if target and os.path.exists(target):
-                return target
+            if target and os.path.exists(str(target)):
+                return cast(str, target)
 
             # Try with working directory
             work_dir = lnk.work_dir
-            if work_dir and os.path.exists(work_dir):
-                return work_dir
+            if work_dir and os.path.exists(str(work_dir)):
+                return cast(str, work_dir)
 
             return None
         except Exception as e:
@@ -174,7 +175,7 @@ class WindowsAPI:
                 )
 
                 if result:
-                    file_id = (info.nFileIndexHigh << 32) | info.nFileIndexLow
+                    file_id = int((info.nFileIndexHigh << 32) | info.nFileIndexLow)
                     return file_id
                 return None
             finally:

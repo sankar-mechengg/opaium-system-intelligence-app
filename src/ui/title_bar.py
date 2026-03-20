@@ -140,6 +140,9 @@ class TitleBar(QWidget):
             btn.clicked.connect(signal.emit)
             layout.addWidget(btn)
 
+            if obj_name == "titleMaxBtn":
+                self._max_btn = btn
+
     def _on_tab_clicked(self, tab_id: str) -> None:
         """Handle navigation tab click."""
         if tab_id == self._current_tab:
@@ -155,6 +158,11 @@ class TitleBar(QWidget):
     def set_active_tab(self, tab_id: str) -> None:
         """Programmatically set the active tab."""
         self._on_tab_clicked(tab_id)
+
+    def update_maximize_icon(self, is_maximized: bool) -> None:
+        """Update the maximize button icon to reflect window state."""
+        self._max_btn.setText("❐" if is_maximized else "☐")
+        self._max_btn.setToolTip("Restore" if is_maximized else "Maximize")
 
     # === Window Dragging ===
 

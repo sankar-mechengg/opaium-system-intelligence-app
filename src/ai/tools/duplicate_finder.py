@@ -111,7 +111,7 @@ class DuplicateFinderTool(BaseTool):
                     files_hashed += 1
 
         # Phase 3: Collect duplicate groups
-        duplicate_groups = []
+        duplicate_groups: list[dict[str, Any]] = []
         total_wasted = 0
 
         for hash_val, file_list in hash_groups.items():
