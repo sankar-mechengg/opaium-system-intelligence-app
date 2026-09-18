@@ -33,6 +33,13 @@ class OperationType(StrEnum):
     CREATE_FILE = "create_file"
     WRITE_FILE = "write_file"
     APPEND_FILE = "append_file"
+    RENAME_FOLDER = "rename_folder"
+    MOVE_FOLDER = "move_folder"
+    COPY_FOLDER = "copy_folder"
+    DELETE_FOLDER = "delete_folder"
+    CLEAN_EMPTY = "clean_empty"
+    EMPTY_RECYCLE_BIN = "empty_recycle_bin"
+    OTHER = "other"
 
 
 class FileMapping(BaseModel):
@@ -95,6 +102,13 @@ class Operation(BaseModel):
             OperationType.CREATE_FILE: "Create File",
             OperationType.WRITE_FILE: "Write File",
             OperationType.APPEND_FILE: "Append File",
+            OperationType.RENAME_FOLDER: "Rename Folder",
+            OperationType.MOVE_FOLDER: "Move Folder",
+            OperationType.COPY_FOLDER: "Copy Folder",
+            OperationType.DELETE_FOLDER: "Delete Folder",
+            OperationType.CLEAN_EMPTY: "Clean Empty Folders",
+            OperationType.EMPTY_RECYCLE_BIN: "Empty Recycle Bin",
+            OperationType.OTHER: "Operation",
         }
         return labels.get(self.operation_type, self.operation_type.value)
 
@@ -102,14 +116,16 @@ class Operation(BaseModel):
     def undo_description(self) -> str:
         t = self.operation_type
         n = self.affected_count
-        if t in (OperationType.RENAME, OperationType.BATCH_RENAME):
+        if t in (OperationType.RENAME, OperationType.BATCH_RENAME, OperationType.RENAME_FOLDER):
             return f"Restore original names for {n} item(s)"
-        elif t in (OperationType.MOVE, OperationType.BATCH_MOVE):
+        elif t in (OperationType.MOVE, OperationType.BATCH_MOVE, OperationType.MOVE_FOLDER):
             return f"Move {n} item(s) back to original location(s)"
-        elif t in (OperationType.COPY, OperationType.BATCH_COPY):
+        elif t in (OperationType.COPY, OperationType.BATCH_COPY, OperationType.COPY_FOLDER):
             return f"Delete {n} copied item(s)"
-        elif t in (OperationType.DELETE, OperationType.BATCH_DELETE):
+        elif t in (OperationType.DELETE, OperationType.BATCH_DELETE, OperationType.DELETE_FOLDER):
             return f"Restore {n} item(s) from Recycle Bin"
+        elif t == OperationType.CLEAN_EMPTY:
+            return f"Recreate {n} removed empty folder(s)"
         elif t == OperationType.ORGANIZE:
             return f"Move {n} item(s) back to original locations"
         elif t == OperationType.FLATTEN:

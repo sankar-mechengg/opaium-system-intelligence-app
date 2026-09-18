@@ -12,6 +12,7 @@ from loguru import logger
 from PySide6.QtCore import QObject, QTimer, Signal
 
 from src.config.constants import AppConstants
+from src.undo.backup_store import BackupStore
 from src.undo.operation_journal import OperationJournal
 
 
@@ -71,6 +72,7 @@ class AutoPurge(QObject):
         """Execute the purge."""
         try:
             count = self._journal.purge_old(days=self._purge_days)
+            BackupStore().purge_older_than(self._purge_days)
             if count > 0:
                 self.purge_completed.emit(count)
                 logger.info(f"Auto-purge removed {count} old operation(s).")

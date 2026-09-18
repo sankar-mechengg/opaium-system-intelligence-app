@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from loguru import logger
@@ -33,6 +34,8 @@ class OperationJournal:
     def __init__(self, db_path: Path | None = None) -> None:
         self._db_path = db_path or AppConstants.UNDO_DB_FILE
         self._connection: sqlite3.Connection | None = None
+        # Tools record from the thread pool while the UI reads on the main thread.
+        self._lock = threading.RLock()
         self._initialize()
 
     def _initialize(self) -> None:
@@ -92,14 +95,17 @@ class OperationJournal:
 
     @contextmanager
     def _cursor(self) -> Generator[sqlite3.Cursor, None, None]:
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        try:
-            yield cursor
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
+        with self._lock:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            try:
+                yield cursor
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+            finally:
+                cursor.close()
 
     def record(self, operation: Operation) -> int:
         """
@@ -210,9 +216,15 @@ class OperationJournal:
                 (reason, op_id),
             )
 
+    def count(self) -> int:
+        with self._cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) AS cnt FROM operations")
+            return int(cursor.fetchone()["cnt"])
+
     def delete_operation(self, op_id: int) -> bool:
         """Delete a single operation and its file mappings."""
         with self._cursor() as cursor:
+            cursor.execute("DELETE FROM file_mappings WHERE operation_id = ?", (op_id,))
             cursor.execute("DELETE FROM operations WHERE id = ?", (op_id,))
             deleted = cursor.rowcount > 0
             if deleted:
@@ -237,12 +249,14 @@ class OperationJournal:
         Returns:
             Number of operations purged.
         """
+        cutoff = (datetime.now() - timedelta(days=max(1, days))).isoformat()
         with self._cursor() as cursor:
-            cursor.execute(
-                "DELETE FROM operations WHERE timestamp < datetime('now', ?)",
-                (f"-{days} days",),
-            )
-            purged = cursor.rowcount
+            cursor.execute("SELECT id FROM operations WHERE timestamp < ?", (cutoff,))
+            ids = [row["id"] for row in cursor.fetchall()]
+            if ids:
+                cursor.executemany("DELETE FROM file_mappings WHERE operation_id = ?", [(i,) for i in ids])
+                cursor.executemany("DELETE FROM operations WHERE id = ?", [(i,) for i in ids])
+            purged = len(ids)
             if purged:
                 logger.info(f"Purged {purged} operations older than {days} days.")
             return purged
@@ -305,9 +319,10 @@ class OperationJournal:
         )
 
     def close(self) -> None:
-        if self._connection:
-            self._connection.close()
-            self._connection = None
+        with self._lock:
+            if self._connection:
+                self._connection.close()
+                self._connection = None
 
     def __del__(self) -> None:
         with suppress(Exception):
