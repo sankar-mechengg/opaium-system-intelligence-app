@@ -65,7 +65,7 @@ class TestDefaultConfig:
         data = settings.model_dump(mode="json")
         assert "appearance" in data
         assert "ai" in data
-        assert data["appearance"]["theme"] == "light"
+        assert data["appearance"]["theme"] == "system"
 
     def test_settings_from_dict(self, mock_config_data: dict):
         settings = DefaultConfig(**mock_config_data)
