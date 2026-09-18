@@ -14,7 +14,7 @@ $repoDist = Join-Path (Join-Path $here "..\..") "dist"
 if (-not $MsiPath) {
     $candidates = Get-ChildItem -Path $repoDist -Filter "OPAIUM-*-windows.msi" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
     if (-not $candidates) {
-        throw "No MSI found under $repoDist. Pass -MsiPath 'C:\path\to\OPAIUM-v1.0.0-windows.msi' or build with build_msi.ps1."
+        throw "No MSI found under $repoDist. Pass -MsiPath 'C:\path\to\OPAIUM-v2.0.0-windows.msi' or build with build_msi.ps1."
     }
     $MsiPath = $candidates[0].FullName
 }

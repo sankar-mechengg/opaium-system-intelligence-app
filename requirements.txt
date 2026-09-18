@@ -1,84 +1,47 @@
-# Sync: pip freeze from .venv. Do not add python-msilib (not on PyPI).
-aiosqlite==0.22.1
-altgraph==0.17.5
-annotated-types==0.7.0
-anyio==4.12.1
-argon2-cffi==25.1.0
-argon2-cffi-bindings==25.1.0
-black==26.1.0
-cabarchive==0.2.5
-certifi==2026.1.4
-cffi==2.0.0
-charset-normalizer==3.4.4
-click==8.3.1
-colorama==0.4.6
-comtypes==1.4.15
-coverage==7.13.4
-cryptography==46.0.5
-cx_Freeze==8.6.0
-distro==1.9.0
-et_xmlfile==2.0.0
-filelock==3.24.3
-freeze-core==0.6.0
-h11==0.16.0
-httpcore==1.0.9
-httpx==0.28.1
-idna==3.11
-iniconfig==2.3.0
-jiter==0.13.0
-librt==0.8.1
-lief==0.17.3
-loguru==0.7.3
-lxml==6.0.2
-markdown2==2.5.5
-mypy==1.19.1
-mypy_extensions==1.1.0
-numpy==2.4.2
+# OP(AI)UM runtime dependencies (end users / PyInstaller build)
+# Development and packaging tools live in requirements-dev.txt.
+
+# UI
+PySide6==6.10.2
+
+# AI provider (OpenAI + any OpenAI-compatible endpoint)
 openai==2.21.0
-openpyxl==3.1.5
-packaging==26.0
-pathspec==1.0.4
-pdfminer.six==20251230
-pdfplumber==0.11.9
-pefile==2024.8.26
-pillow==12.1.1
-platformdirs==4.9.2
-pluggy==1.6.0
-pycparser==3.0
+
+# Config, security
 pydantic==2.12.5
 pydantic-settings==2.13.1
-pydantic_core==2.41.5
-Pygments==2.19.2
-pyinstaller==6.19.0
-pyinstaller-hooks-contrib==2026.3
-pylnk3==0.4.3
-pypdfium2==5.5.0
-PySide6==6.10.2
-PySide6_Addons==6.10.2
-PySide6_Essentials==6.10.2
-pytest==9.0.2
-pytest-asyncio==1.3.0
-pytest-cov==7.0.0
-pytest-qt==4.5.0
-python-docx==1.2.0
+cryptography==46.0.5
+argon2-cffi==25.1.0
 python-dotenv==1.2.1
-python-magic-bin==0.4.14
-python-pptx==1.0.2
-pytokens==0.4.1
+
+# Logging
+loguru==0.7.3
+
+# Windows integration
 pywin32==311
-pywin32-ctypes==0.2.3
-ruff==0.15.2
-scipy==1.17.0
+comtypes==1.4.15
+pylnk3==0.4.3
 Send2Trash==2.1.0
-setuptools==82.0.0
-shiboken6==6.10.2
-sniffio==1.3.1
-sounddevice==0.5.5
-striprtf==0.0.29
-tqdm==4.67.3
-typing-inspection==0.4.2
-typing_extensions==4.15.0
-watchdog==6.0.0
-win32_setctime==1.2.0
 winotify==1.1.0
+watchdog==6.0.0
+psutil==7.0.0
+
+# Voice input
+sounddevice==0.5.5
+numpy==2.4.2
+
+# Documents the AI can read / write
+python-docx==1.2.0
+python-pptx==1.0.2
+openpyxl==3.1.5
 xlsxwriter==3.2.9
+pdfplumber==0.11.9
+pdfminer.six==20251230
+pypdfium2==5.5.0
+striprtf==0.0.29
+lxml==6.0.2
+pillow==12.1.1
+
+# Chat rendering
+markdown2==2.5.5
+Pygments==2.19.2

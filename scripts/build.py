@@ -2,12 +2,17 @@
 OP(AI)UM — Build Script
 
 Packages the app into a standalone Windows executable using PyInstaller.
-Usage: python scripts/build.py
+The version is read from src/version.py (single source of truth).
+
+Usage: python scripts/build.py [--clean]
 """
 
-import os
-import sys
+from __future__ import annotations
+
+import re
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -19,105 +24,118 @@ ICON = ASSETS / "icons" / "opaium_logo_nobg.ico"
 
 ENTRY = SRC / "main.py"
 APP_NAME = "OPAIUM"
-VERSION = "1.0.0"
+
+
+def read_version() -> str:
+    text = (SRC / "version.py").read_text(encoding="utf-8")
+    match = re.search(r'__version__\s*=\s*"([^"]+)"', text)
+    if not match:
+        raise SystemExit("Could not read __version__ from src/version.py")
+    return match.group(1)
+
+
+VERSION = read_version()
 
 
 def clean() -> None:
     """Remove previous build artifacts."""
-    import shutil
-    for d in [DIST, BUILD]:
+    for d in (DIST, BUILD):
         if d.exists():
             shutil.rmtree(d)
             print(f"Cleaned: {d}")
 
 
+def _hidden_imports() -> list[str]:
+    third_party = [
+        "loguru",
+        "PySide6",
+        "PySide6.QtCore",
+        "PySide6.QtGui",
+        "PySide6.QtWidgets",
+        "PySide6.QtNetwork",
+        "PySide6.QtSvg",
+        "openai",
+        "pydantic",
+        "pydantic_settings",
+        "cryptography",
+        "argon2",
+        "argon2.low_level",
+        "numpy",
+        "sounddevice",
+        "send2trash",
+        "pylnk3",
+        "lxml",
+        "lxml.etree",
+        "markdown2",
+        "pygments",
+        "pygments.lexers",
+        "pygments.formatters",
+        "docx",
+        "openpyxl",
+        "pptx",
+        "pdfplumber",
+        "pdfminer",
+        "pdfminer.high_level",
+        "pypdfium2",
+        "striprtf",
+        "PIL",
+        "PIL.Image",
+        "winotify",
+        "watchdog",
+        "watchdog.observers",
+        "watchdog.events",
+        "psutil",
+        "comtypes",
+        "pythoncom",
+        "pywintypes",
+        "win32com",
+        "win32com.client",
+        "win32com.shell",
+        "win32com.shell.shell",
+        "win32api",
+        "win32con",
+        "win32file",
+        "xlsxwriter",
+        "dotenv",
+    ]
+    # Every module under src/ is imported lazily somewhere (tools via the registry,
+    # panels via the window); list them all so PyInstaller never misses one.
+    project = []
+    for path in sorted(SRC.rglob("*.py")):
+        rel = path.relative_to(ROOT).with_suffix("")
+        module = ".".join(rel.parts)
+        if module.endswith("__init__"):
+            module = module[: -len(".__init__")]
+        project.append(module)
+    return third_party + project
+
+
 def build() -> None:
     """Run PyInstaller."""
     cmd = [
-        sys.executable, "-m", "PyInstaller",
-        "--name", APP_NAME,
+        sys.executable,
+        "-m",
+        "PyInstaller",
+        "--name",
+        APP_NAME,
         "--onedir",
         "--windowed",
         "--noconfirm",
         "--clean",
-        # Data files
-        "--add-data", f"{ASSETS};assets",
-        # Third-party packages imported inside functions or conditionally — PyInstaller can't trace these statically
-        "--hidden-import", "loguru",
-        "--hidden-import", "PySide6",
-        "--hidden-import", "PySide6.QtCore",
-        "--hidden-import", "PySide6.QtGui",
-        "--hidden-import", "PySide6.QtWidgets",
-        "--hidden-import", "PySide6.QtNetwork",
-        "--hidden-import", "PySide6.QtSvg",
-        "--hidden-import", "openai",
-        "--hidden-import", "pydantic",
-        "--hidden-import", "pydantic_settings",
-        "--hidden-import", "cryptography",
-        "--hidden-import", "argon2",
-        "--hidden-import", "argon2.low_level",
-        "--hidden-import", "numpy",
-        "--hidden-import", "scipy",
-        "--hidden-import", "sounddevice",
-        "--hidden-import", "send2trash",
-        "--hidden-import", "pylnk3",
-        "--hidden-import", "lxml",
-        "--hidden-import", "lxml.etree",
-        "--hidden-import", "markdown2",
-        "--hidden-import", "docx",
-        "--hidden-import", "openpyxl",
-        "--hidden-import", "pptx",
-        "--hidden-import", "pdfplumber",
-        "--hidden-import", "pdfminer",
-        "--hidden-import", "pdfminer.high_level",
-        "--hidden-import", "pypdfium2",
-        "--hidden-import", "striprtf",
-        "--hidden-import", "PIL",
-        "--hidden-import", "PIL.Image",
-        "--hidden-import", "winotify",
-        "--hidden-import", "watchdog",
-        "--hidden-import", "watchdog.observers",
-        "--hidden-import", "watchdog.events",
-        "--hidden-import", "comtypes",
-        "--hidden-import", "pythoncom",
-        "--hidden-import", "win32com",
-        "--hidden-import", "win32com.client",
-        "--hidden-import", "win32com.shell",
-        "--hidden-import", "win32com.shell.shell",
-        "--hidden-import", "win32api",
-        "--hidden-import", "win32con",
-        "--hidden-import", "win32file",
-        "--hidden-import", "win32_setctime",
-        "--hidden-import", "xlsxwriter",
-        "--hidden-import", "aiosqlite",
-        "--hidden-import", "python_dotenv",
-        "--hidden-import", "dotenv",
-        # AI tool modules loaded dynamically via function_registry
-        "--hidden-import", "src.ai.tools.file_counter",
-        "--hidden-import", "src.ai.tools.file_renamer",
-        "--hidden-import", "src.ai.tools.file_deleter",
-        "--hidden-import", "src.ai.tools.file_mover",
-        "--hidden-import", "src.ai.tools.file_copier",
-        "--hidden-import", "src.ai.tools.file_sizer",
-        "--hidden-import", "src.ai.tools.duplicate_finder",
-        "--hidden-import", "src.ai.tools.smart_organizer",
-        "--hidden-import", "src.ai.tools.date_organizer",
-        "--hidden-import", "src.ai.tools.empty_folder_cleaner",
-        "--hidden-import", "src.ai.tools.regex_renamer",
-        "--hidden-import", "src.ai.tools.extension_changer",
-        "--hidden-import", "src.ai.tools.large_file_finder",
-        "--hidden-import", "src.ai.tools.file_age_analyzer",
-        "--hidden-import", "src.ai.tools.folder_flattener",
-        "--hidden-import", "src.ai.tools.type_summarizer",
-        "--hidden-import", "src.ai.tools.metadata_reader",
-        "--hidden-import", "src.ai.tools.recycle_bin_tool",
-        "--hidden-import", "src.ai.tools.startup_tool",
-        "--hidden-import", "src.ai.tools.disk_usage_tool",
-        # Paths
-        "--distpath", str(DIST),
-        "--workpath", str(BUILD),
-        "--specpath", str(BUILD),
+        "--add-data",
+        f"{ASSETS};assets",
+        "--distpath",
+        str(DIST),
+        "--workpath",
+        str(BUILD),
+        "--specpath",
+        str(BUILD),
     ]
+    for mod in _hidden_imports():
+        cmd += ["--hidden-import", mod]
+    # Not used at runtime; keeps the bundle smaller
+    for mod in ("tkinter", "scipy", "matplotlib", "IPython", "pytest"):
+        cmd += ["--exclude-module", mod]
 
     if ICON.exists():
         cmd.extend(["--icon", str(ICON)])
@@ -139,6 +157,7 @@ def build() -> None:
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
             print(f"   Size: {size_mb:.1f} MB")
+        (DIST / "VERSION").write_text(VERSION + "\n", encoding="utf-8")
     else:
         print(f"\n[FAILED] Build failed with code {result.returncode}")
         sys.exit(1)

@@ -25,10 +25,13 @@ jobs:
         run: pip install ruff
 
       - name: Run ruff lint
-        run: ruff check src/ tests/
+        run: ruff check src/ tests/ scripts/
 
       - name: Run ruff format check
         run: ruff format --check src/ tests/
+
+      - name: Byte-compile
+        run: python -m compileall -q src/ scripts/
 
   typecheck:
     name: Type Check
@@ -42,11 +45,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: |
-          pip install mypy
-          pip install pydantic pydantic-settings loguru
+        run: pip install -r requirements-dev.txt
 
-      - name: Run mypy
+      - name: Run mypy (advisory)
         run: mypy src/ --ignore-missing-imports --no-error-summary || true
 
   test:
@@ -61,7 +62,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-dev.txt
 
       - name: Run tests
         run: pytest tests/ -v --tb=short --cov=src --cov-report=xml
@@ -88,9 +89,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pyinstaller
+        run: pip install -r requirements-dev.txt
 
       - name: Build with PyInstaller
         run: python scripts/build.py

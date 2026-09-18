@@ -4,7 +4,7 @@
   Build MSI from PyInstaller onedir (dist/OPAIUM) using WiX Toolset 3.11.
 
 .PARAMETER TagName
-  Git tag, e.g. v1.0.0 - used for output filename and MSI product version.
+  Git tag, e.g. v2.0.0 - used for output filename and MSI product version.
 
 .PARAMETER RepoRoot
   Repository root (folder containing dist/OPAIUM).
@@ -34,7 +34,7 @@ if (-not (Test-Path (Join-Path $distPath "OPAIUM.exe"))) {
 # WiX Product @Version must be numeric x.x.x.x
 $m = [regex]::Match($TagName, 'v?(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?')
 if (-not $m.Success) {
-    $productVersion = "1.0.0.0"
+    $productVersion = "2.0.0.0"
     Write-Warning "Tag '$TagName' not like v1.2.3 - using ProductVersion $productVersion"
 } else {
     $b = if ($m.Groups[4].Success) { $m.Groups[4].Value } else { "0" }

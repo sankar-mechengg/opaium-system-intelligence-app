@@ -11,10 +11,10 @@ Tagged releases (`v*`) build an **MSI** in CI and attach it next to the ZIP.
 
    ```powershell
    Set-ExecutionPolicy -Scope Process Bypass -Force
-   ./installer/wix/build_msi.ps1 -TagName "v1.0.0" -RepoRoot (Get-Location)
+   ./installer/wix/build_msi.ps1 -TagName "v2.0.0" -RepoRoot (Get-Location)
    ```
 
-3. Output: `dist/OPAIUM-v1.0.0-windows.msi`
+3. Output: `dist/OPAIUM-v2.0.0-windows.msi`
 
 The script downloads [WiX Toolset 3.11](https://github.com/wixtoolset/wix3/releases) binaries into `%TEMP%` if `candle.exe` is not already there.
 
@@ -40,7 +40,7 @@ This MSI does **not** ship a full WiX wizard UI (the package is large; a standar
    Or manually:
 
    ```powershell
-   msiexec /i "C:\path\to\OPAIUM-v1.0.0-windows.msi" /l*v "$env:TEMP\opaium-msi-install.log"
+   msiexec /i "C:\path\to\OPAIUM-v2.0.0-windows.msi" /l*v "$env:TEMP\opaium-msi-install.log"
    ```
 
    Then open `%TEMP%\opaium-msi-install.log` and search for `Return value 3` / `error` if something failed.
@@ -56,7 +56,7 @@ This MSI does **not** ship a full WiX wizard UI (the package is large; a standar
 ### Steps
 1. Open `opaium_setup.iss` in Inno Setup Compiler
 2. Click **Build → Compile** (or press Ctrl+F9)
-3. The installer will be output to `installer/output/OPAIUM_Setup_1.0.0.exe`
+3. The installer will be output to `installer/output/OPAIUM_Setup_2.0.0.exe`
 
 ### What the Installer Does
 - Installs OP(AI)UM to `C:\Program Files\OPAIUM\`

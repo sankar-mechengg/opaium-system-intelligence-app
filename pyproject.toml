@@ -1,16 +1,16 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "opaium"
-version = "1.0.0"
+dynamic = ["version"]
 description = "OP(AI)UM — Omniscient Processor for Adaptive Intelligence & Unified Management"
 readme = "README.md"
-license = {text = "Proprietary"}
+license = {text = "MIT"}
 requires-python = ">=3.11"
 authors = [
-    {name = "Sankar", email = "sankar@veyon.in"},
+    {name = "Sankar Balasubramanian"},
 ]
 keywords = ["file-manager", "ai", "windows", "system-intelligence", "automation"]
 classifiers = [
@@ -25,8 +25,16 @@ classifiers = [
     "Topic :: System :: Systems Administration",
 ]
 
+[project.urls]
+Homepage = "https://github.com/sankar-mechengg/opaium-system-intelligence-app"
+Releases = "https://github.com/sankar-mechengg/opaium-system-intelligence-app/releases"
+Issues = "https://github.com/sankar-mechengg/opaium-system-intelligence-app/issues"
+
 [project.gui-scripts]
 opaium = "src.main:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "src.version.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -51,6 +59,8 @@ ignore = ["N802", "N806", "E501", "SIM102", "SIM108"]
 [tool.ruff.lint.per-file-ignores]
 # ctypes Structure names mirror Windows SDK (not CapWords)
 "src/utils/windows_api.py" = ["N801"]
+"src/ui/native_window.py" = ["N801"]
+"src/services/idle_monitor.py" = ["N801"]
 
 [tool.mypy]
 python_version = "3.11"
