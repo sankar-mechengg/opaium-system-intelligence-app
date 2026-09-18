@@ -25,6 +25,7 @@ def _handle_sigint(signum, frame):
     """Handle Ctrl+C gracefully."""
     print("\n  Stopping OP(AI)UM...")
     from PySide6.QtWidgets import QApplication
+
     app = QApplication.instance()
     if app:
         app.quit()
@@ -39,7 +40,7 @@ def main() -> None:
     print("=" * 50)
     print(f"  Root: {ROOT}")
     print(f"  Python: {sys.version}")
-    print(f"  Press Ctrl+C to stop")
+    print("  Press Ctrl+C to stop")
     print()
 
     missing = []
@@ -56,10 +57,11 @@ def main() -> None:
 
     if missing:
         print(f"WARNING: Missing packages: {', '.join(missing)}")
-        print(f"   Run: pip install -r requirements.txt")
+        print("   Run: pip install -r requirements.txt")
         sys.exit(1)
 
     from src.main import main as app_main
+
     app_main()
 
 

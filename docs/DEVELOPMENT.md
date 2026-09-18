@@ -9,8 +9,7 @@ python scripts/run_dev.py
 
 ### Auto-Restart on File Changes (Recommended!)
 ```bash
-# Install watchdog first
-pip install watchdog
+# watchdog ships with the runtime requirements
 
 # Run with auto-restart
 python scripts/run_dev_watch.py
@@ -71,11 +70,6 @@ python scripts/run_dev_watch.py
 - `.db`, `.db-journal`, `.log`, `.enc`
 - `.git`, `.venv`, `node_modules`
 
-### 3. Theme Hot-Reload (UI Only)
-**Script:** `scripts/reload_theme.py`
-
-For quick theme/stylesheet changes without full restart (future feature).
-
 ## File Change Detection
 
 The auto-restart watcher triggers on:
@@ -102,7 +96,7 @@ The auto-restart shows:
 
 ### 3. Quick Theme Tweaks
 For theme-only changes:
-1. Edit `assets/themes/light.qss` or `dark.qss`
+1. Edit `assets/themes/base.qss` (tokens) or the palettes in `src/ui/theme.py`
 2. Save
 3. Auto-restart picks it up instantly
 

@@ -41,7 +41,8 @@ def main() -> None:
 
     # MyPy type checking
     mypy_cmd = [
-        "mypy", str(SRC),
+        "mypy",
+        str(SRC),
         "--ignore-missing-imports",
         "--no-error-summary",
     ]

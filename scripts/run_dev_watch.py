@@ -7,14 +7,14 @@ Perfect for rapid development and testing.
 Usage: python scripts/run_dev_watch.py
 """
 
-import os
-import sys
-import time
 import hashlib
+import os
 import subprocess
+import sys
 import threading
+import time
 from pathlib import Path
-from watchdog.observers import Observer
+
 from watchdog.events import FileSystemEventHandler
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -37,16 +37,30 @@ class AppRestartHandler(FileSystemEventHandler):
         self._startup_grace_seconds = 5.0
 
         self.ignored_patterns = {
-            '__pycache__', '.pyc', '.pyo', '.git', '.venv',
-            '.db', '.db-journal', '.db-wal', '.log', '.enc',
-            'node_modules', '.pytest_cache', '.mypy_cache',
-            '.tmp', '.bak', '~', '.swp', '.swo',
+            "__pycache__",
+            ".pyc",
+            ".pyo",
+            ".git",
+            ".venv",
+            ".db",
+            ".db-journal",
+            ".db-wal",
+            ".log",
+            ".enc",
+            "node_modules",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".tmp",
+            ".bak",
+            "~",
+            ".swp",
+            ".swo",
         }
 
     def _hash_file(self, path: str) -> str | None:
         """Get MD5 hash of a file's contents to detect real changes."""
         try:
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 return hashlib.md5(f.read()).hexdigest()
         except (OSError, PermissionError):
             return None
@@ -68,10 +82,7 @@ class AppRestartHandler(FileSystemEventHandler):
     def should_ignore(self, path: str) -> bool:
         """Check if file should be ignored."""
         path_lower = path.lower()
-        for pattern in self.ignored_patterns:
-            if pattern in path_lower:
-                return True
-        return False
+        return any(pattern in path_lower for pattern in self.ignored_patterns)
 
     def on_modified(self, event):
         """Handle file modification with debouncing and content verification."""
@@ -81,7 +92,7 @@ class AppRestartHandler(FileSystemEventHandler):
         if self.should_ignore(event.src_path):
             return
 
-        if not (event.src_path.endswith('.py') or event.src_path.endswith('.qss')):
+        if not (event.src_path.endswith(".py") or event.src_path.endswith(".qss")):
             return
 
         # Skip changes during startup grace period (imports trigger false events)
@@ -113,10 +124,10 @@ class AppRestartHandler(FileSystemEventHandler):
 
     def _do_restart(self, changed_file: str):
         """Actually perform the restart."""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  File changed: {changed_file}")
-        print(f"  Restarting application...")
-        print(f"{'='*60}\n")
+        print("  Restarting application...")
+        print(f"{'=' * 60}\n")
         self.restart_app()
 
     def start_app(self):
@@ -138,9 +149,9 @@ class AppRestartHandler(FileSystemEventHandler):
     def _stream_output(self):
         """Stream subprocess output to console."""
         if self.process and self.process.stdout:
-            for line in iter(self.process.stdout.readline, ''):
+            for line in iter(self.process.stdout.readline, ""):
                 if line:
-                    print(line, end='')
+                    print(line, end="")
 
     def restart_app(self):
         """Stop and restart the application."""
@@ -169,7 +180,7 @@ class AppRestartHandler(FileSystemEventHandler):
 
     def snapshot_source_files(self):
         """Take initial hashes of all source files to establish baseline."""
-        for pattern in ['src/**/*.py', 'assets/**/*.qss']:
+        for pattern in ["src/**/*.py", "assets/**/*.qss"]:
             for filepath in ROOT.glob(pattern):
                 path_str = str(filepath)
                 if not self.should_ignore(path_str):

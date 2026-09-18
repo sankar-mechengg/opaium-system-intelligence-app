@@ -1,14 +1,21 @@
-# AI Capabilities - Complete Filesystem Control
+# AI Capabilities
 
-The OP(AI)UM AI assistant has **FULL ROOT-LEVEL ACCESS** to the filesystem and can perform any operation you request.
+The OP(AI)UM assistant works on your files through 22 tools. It can read, write, create, rename, move, copy,
+delete (to the Recycle Bin), organize and analyze files and folders, and report on disks, startup programs and
+the Recycle Bin.
+
+## Safety (v2)
+
+- **Protected locations are refused** — Windows, Program Files, ProgramData, drive roots, the user profile root
+  and OP(AI)UM's own data folder can never be modified by a tool, no matter what the prompt says.
+- **Every destructive tool is previewed** — before anything changes you see the exact files, sizes and
+  before → after names in an approval dialog. Cancel returns the tool result *"Cancelled by user"* to the model.
+  (Settings → AI → *Ask before destructive operations*; you can also trust a tool for the session from the dialog.)
+- **Undo** — renames, moves, organizes, copies, folder/file creation, empty-folder cleanup, deletions
+  (restored from the Recycle Bin) and file writes/appends (content backed up first) can be undone from the
+  tool card in the chat or from the History tab.
 
 ## Overview
-
-The AI is not limited in what it can do with files and folders. It has complete control over:
-- Reading, writing, and modifying files
-- Creating, deleting, moving, and copying folders
-- Batch operations on any number of files/folders
-- Content manipulation and organization
 
 ## Available Operations
 

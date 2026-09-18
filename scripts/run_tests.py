@@ -21,17 +21,21 @@ def main() -> None:
         cmd.append("-v")
 
     if "--coverage" in sys.argv:
-        cmd.extend([
-            "--cov=src",
-            "--cov-report=term-missing",
-            "--cov-report=html:htmlcov",
-        ])
+        cmd.extend(
+            [
+                "--cov=src",
+                "--cov-report=term-missing",
+                "--cov-report=html:htmlcov",
+            ]
+        )
 
-    cmd.extend([
-        "-x",           # Stop on first failure
-        "--tb=short",   # Short tracebacks
-        "-q",           # Quiet unless verbose
-    ])
+    cmd.extend(
+        [
+            "-x",  # Stop on first failure
+            "--tb=short",  # Short tracebacks
+            "-q",  # Quiet unless verbose
+        ]
+    )
 
     print(f"Running tests from: {TESTS}")
     print(f"Command: {' '.join(cmd)}")

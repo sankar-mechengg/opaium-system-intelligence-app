@@ -2,65 +2,68 @@
 
 ## Overview
 
-OP(AI)UM uses Qt Style Sheets (QSS) for theming. Themes are `.qss` files in `assets/themes/`.
+OP(AI)UM ships a token-based design system:
 
-## File Structure
+- **`assets/themes/base.qss`** — a single Qt Style Sheet template. Colors are never hard-coded;
+  every color is written as a token such as `@accent` or `@bg_surface0`.
+- **`src/ui/theme.py`** — the `ThemeManager`. It holds the light and dark palettes
+  (`LIGHT_TOKENS`, `DARK_TOKENS`), renders the template with the active palette, follows the
+  Windows color scheme when the mode is `system`, and emits `theme_applied(str)` so widgets can
+  re-tint their icons.
+- **`assets/icons/svg/*.svg`** — a monochrome icon set using `currentColor`. `SvgIcons.themed(name, role)`
+  tints an icon with a palette token at runtime; `IconButton` re-tints automatically on theme change.
 
-```
-assets/themes/
-├── light.qss    # Pastel light theme
-└── dark.qss     # Catppuccin-inspired dark theme
-```
+## Modes
 
-## Creating a New Theme
+| Mode | Behaviour |
+|------|-----------|
+| `system` (default) | Follows the Windows *Light / Dark* app setting live |
+| `light` | Always light |
+| `dark` | Always dark |
 
-1. Copy `light.qss` or `dark.qss` as a starting point
-2. Rename to `mytheme.qss`
-3. Modify colors throughout
-4. Add the theme name to `AppearanceSettings._theme_combo`
+The mode is stored in `appearance.theme` and can be changed in **Settings → Appearance** (changes preview
+instantly and revert on Cancel).
 
-## Key Object Names
+## Tokens
 
-All widgets use `setObjectName()` for targeted styling. Key selectors:
+| Group | Tokens |
+|-------|--------|
+| Surfaces | `bg_crust`, `bg_mantle`, `bg_base`, `bg_surface0/1/2`, `bg_overlay`, `bg_hover` |
+| Borders | `border`, `border_strong` |
+| Text | `text`, `text_sub`, `text_muted`, `text_faint` |
+| Accent | `accent`, `accent_hover`, `accent_pressed`, `accent_text`, `accent_soft`, `accent_border` |
+| Semantic | `teal`, `green`, `yellow`, `peach`, `red`, `mauve` (+ `_soft` variants) |
+| Misc | `selection`, `scroll_handle`, `scroll_handle_hover`, `code_bg`, `tooltip_bg`, `icon`, `icon_muted` |
+| Chat | `user_bubble`, `user_bubble_border`, `user_bubble_text` |
 
-### Layout
-- `#mainCentral` — Root widget
-- `#titleBar` — Custom title bar
-- `#explorerSplitter` — Main three-panel splitter
+In Python, read a token with `from src.ui.theme import token; token("accent")`. Custom-painted widgets
+(ring gauges, toggles, spinners, avatars) resolve tokens at paint time so they follow theme switches.
 
-### Explorer
-- `#folderCard`, `#fileCard` — Item cards
-- `#cardGridScroll` — Scrollable grid area
-- `#folderTree` — Navigation tree
-- `#previewPanel` — Right-side preview
+## Adding a palette
 
-### Chat
-- `#bubble_user`, `#bubble_assistant`, `#bubble_system` — Message bubbles
-- `#chatInput` — Text input
-- `#sendButton` — Send button
-- `#actionChip` — Quick action chips
+1. Add a new dict in `src/ui/theme.py` with every key from `DARK_TOKENS`.
+2. Extend `ThemeManager._resolve()` and the `THEMES` list in `src/ui/settings/appearance_settings.py`.
+3. Add the value to `ThemeMode` in `src/config/defaults.py`.
 
-### Dynamic Properties
+## Styling a new widget
 
-Cards support dynamic properties for selection state:
+1. `widget.setObjectName("myWidget")` (and `setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)`
+   for plain `QWidget` containers that need a background).
+2. Add a rule to `base.qss` using tokens only:
 
 ```css
-#folderCard[selected="true"] {
-    border-color: #4FC3F7;
-    background-color: #E3F2FD;
+#myWidget {
+    background-color: @bg_surface0;
+    border: 1px solid @border;
+    border-radius: 10px;
 }
 ```
 
-## Color Palette Recommendations
+3. For dynamic states use properties: `widget.setProperty("state", "ok")` and `#myWidget[state="ok"] { ... }`,
+   then re-polish (`style().unpolish(w); style().polish(w)`).
 
-### Light Theme
-- Background: `#F8F9FA` to `#FFFFFF`
-- Text: `#333333` to `#6C757D`
-- Accent: One primary color (e.g., `#4FC3F7`)
-- Borders: `#DEE2E6` to `#E9ECEF`
+## Icons
 
-### Dark Theme
-- Background: `#1E1E2E` to `#313244`
-- Text: `#CDD6F4` to `#BAC2DE`
-- Accent: Lighter tones (e.g., `#89DCEB`)
-- Borders: `#313244` to `#45475A`
+Generate or edit icons in `scripts/generate_icons.py` (24×24 viewBox, stroke-based) and run it to write
+`assets/icons/svg`. Icons referenced from QSS (`url(@svg_dir/...)`) are tinted copies that the theme manager
+writes to `%APPDATA%\OPAIUM\cache\qss-icons-<theme>` on every apply.

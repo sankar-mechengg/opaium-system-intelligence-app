@@ -1,404 +1,147 @@
-# OP(AI)UM — AI-Powered Windows File Manager
+# OP(AI)UM — System Intelligence for Windows
 
+**Omniscient Processor for Adaptive Intelligence & Unified Management**
 
+OP(AI)UM is a Windows desktop app that puts a fast file explorer, a system dashboard and an AI assistant
+that can *act* on your files into one premium, native-feeling window. Ask it in plain language to count,
+find, organize, rename, move, clean up or read files — every destructive change is previewed first, and
+everything it does can be undone.
 
-**Your files, intelligently managed.**
-
-OP(AI)UM is a Windows desktop application that combines an elegant file explorer with an AI-powered chat interface. Ask natural language questions about your files, organize them with a single command, and undo anything.
-
----
-
-## ✨ Features
-
-### 🗂️ Smart Explorer
-
-- **Recent Files & Folders** — Automatically tracks recently accessed items from Windows Recent
-- **Time-Grouped View** — Items organized into Last 2 Days, Last Week, Last Month, Older
-- **Card Grid Layout** — Visual cards with icons, sizes, and timestamps
-- **Folder Tree Navigation** — Lazy-loading tree with Quick Access and drive enumeration
-- **Preview Panel** — Instant metadata preview on selection
-- **Search & Filter** — Real-time filtering by name, type, and extension
-
-### 🤖 AI Chat Assistant
-
-- **Natural Language Operations** — "Organize my Downloads by type", "Find duplicates in Photos"
-- **21 AI-Callable Tools** — Count, rename, move, copy, delete, organize, find duplicates, and more
-- **Preview & Approve** — Destructive operations show a preview and require explicit approval
-- **Voice Input** — Speech-to-text via OpenAI Whisper
-- **Quick Action Chips** — One-click shortcuts for common operations
-
-### ↩️ Full Undo System
-
-- **Operation Journal** — Every AI operation is recorded with full details
-- **One-Click Undo** — Reverse renames, moves, copies, and reorganizations
-- **History Panel** — Browse and undo past operations
-
-### 🔒 Security
-
-- **PIN or Password Lock** — Argon2id hashing with machine binding
-- **Encrypted API Key** — Fernet encryption for stored credentials
-- **Lock Screen** — Frameless branded lock screen on startup
-
-### 🎨 Theming
-
-- **Light & Dark Themes** — Comprehensive QSS stylesheets
-- **Catppuccin-Inspired Dark** — Modern dark palette
-- **Pastel Light** — Clean, soft light theme
+> Version **2.0.0** · Windows 10/11 · MIT License
 
 ---
 
-## 📦 Installation
+## Highlights
 
-### From GitHub Releases (tagged versions)
+### 🗂️ Explorer
+- **Home view** of recently used files and folders (from Windows Recent), grouped by time.
+- **Real browsing**: tree with quick access & drives, clickable breadcrumbs, editable path (`Alt+D`),
+  back / forward / up, search, type filters, sorting, grid or details view.
+- **Native operations** — rename (`F2`), delete to Recycle Bin (`Del`), new folder (`Ctrl+Shift+N`), open with,
+  properties — all journaled and undoable.
+- **Live**: the open folder refreshes automatically when files change.
+- **Preview panel** with image thumbnails, dates, sizes and one-click actions (open, reveal, copy path, ask AI).
 
-Pushing a tag like `v1.0.0` publishes:
+### 🤖 AI assistant
+- Streams answers live; shows each tool call as an inline card with status, summary and **Undo**.
+- **22 tools**: count, sizes, type breakdown, duplicates, large / old files, metadata, disk usage, startup
+  programs, Recycle Bin, rename (batch / regex / extensions), move, copy, delete, organize by type / date,
+  flatten, clean empty folders, folder operations, read / write documents (TXT, MD, CSV, code, PDF, DOCX,
+  PPTX, XLSX).
+- **Enforced safety**: protected system locations are refused outright; destructive tools always show a
+  real preview and need your approval (configurable); deletions go to the Recycle Bin; files are backed up
+  before the AI overwrites them.
+- **Any provider**: OpenAI (default `gpt-5.2`) or any OpenAI-compatible endpoint — Ollama, LM Studio,
+  OpenRouter, Groq — via a base URL. Fetch the endpoint's model list and test the connection from Settings.
+- Voice input (gpt-4o-transcribe / whisper-1) with a live level meter; conversation history with folder context.
 
+### 📊 Dashboard
+Live CPU, memory, uptime and process count; drive usage; largest user folders; recent activity;
+startup programs; Recycle Bin and undo stats — plus one-click AI actions.
 
-| Asset                       | Use                                                                  |
-| --------------------------- | -------------------------------------------------------------------- |
-| `**OPAIUM-v*-windows.msi`** | Windows Installer (Program Files, Start Menu, uninstall in Settings) |
-| `**OPAIUM-v*-windows.zip**` | Portable: extract anywhere and run `OPAIUM.exe`                      |
+### ↩️ History
+Every AI and Explorer change, newest first, with Undo (rename, move, organize, copy, delete → Recycle Bin
+restore, write → content backup, folder / file creation, empty-folder cleanup).
 
+### 🔒 Security & privacy
+- Optional PIN / password lock (Argon2id) with idle auto-lock, `Ctrl+L`, progressive lockout and a documented
+  reset path.
+- API key encrypted with a machine-bound key; nothing leaves your PC except requests to your chosen provider.
+- No telemetry. Update checks only read the public GitHub Releases feed (can be disabled).
 
-If the **MSI** window closes quickly, see **Troubleshooting** in `[installer/README.md](installer/README.md)` (UAC, 64-bit, logging).
+### ✨ Premium feel
+Native Windows 11 frameless window (snap layouts, shadow, rounded corners), a token-based design system
+that follows the Windows light / dark theme, crisp SVG icons at any DPI, a global hotkey
+(`Ctrl+Shift+Space`) to summon the window from anywhere, tray integration and Windows toasts.
 
-### Optional: Inno Setup EXE (local build)
+---
 
-You can build `OPAIUM_Setup_*.exe` locally with Inno Setup — see `installer/README.md`.
+## Install
 
-### From Source
+Grab the latest release from **[GitHub Releases](https://github.com/sankar-mechengg/opaium-system-intelligence-app/releases)**:
+
+| Asset | Use |
+|-------|-----|
+| `OPAIUM-v2.0.0-windows.msi` | Installer (Program Files, Start Menu, uninstall from Settings) |
+| `OPAIUM-v2.0.0-windows.zip` | Portable — extract anywhere and run `OPAIUM.exe` |
+
+First launch walks you through an optional lock and the AI provider. Add an OpenAI API key (or point OP(AI)UM
+at a local server) in **Settings → AI** at any time.
+
+Data lives in `%APPDATA%\OPAIUM` (settings, history, backups, logs). See
+[docs/configuration.md](docs/configuration.md).
+
+### From source
 
 ```bash
-# Clone
-git clone https://github.com/veyon/opaium.git
-cd opaium
-
-# Create virtual environment
+git clone https://github.com/sankar-mechengg/opaium-system-intelligence-app.git
+cd opaium-system-intelligence-app
 python -m venv .venv
 .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run in development mode
-python scripts/run_dev.py
-
-# OR: Run with auto-restart (recommended for development!)
-pip install watchdog
-python scripts/run_dev_watch.py
+pip install -r requirements-dev.txt
+python scripts/run_dev.py            # or scripts/run_dev_watch.py for auto-restart
 ```
 
-> 💡 **Development Tip**: Use `run_dev_watch.py` for automatic restart on file changes!  
-> See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed development workflow.
-
-### Requirements
-
-- **Python 3.11+**
-- **Windows 10/11** (uses Win32 APIs for .lnk resolution, NTFS USN Journal, Recycle Bin)
-- **OpenAI API Key** (for AI features)
+Requirements: Python 3.11+, Windows 10/11.
 
 ---
 
-## 🏗️ Architecture
+## Keyboard shortcuts
 
-```
-opaium/
-├── src/
-│   ├── main.py              # Entry point
-│   ├── app.py               # Application controller
-│   ├── config/              # Settings, encryption, constants
-│   ├── auth/                # PIN/password authentication
-│   ├── core/                # Data engine (Recent parser, USN Journal, tracking DB)
-│   ├── ai/                  # AI engine, function registry, speech
-│   │   └── tools/           # 21 AI-callable file operation tools
-│   ├── undo/                # Undo journal and manager
-│   └── ui/                  # PySide6 UI layer
-│       ├── explorer/        # Card grid, tree view, preview panel
-│       ├── chat/            # Message bubbles, input, approvals
-│       ├── history/         # Operation history panel
-│       ├── settings/        # Tabbed settings dialog
-│       ├── notifications/   # Toast notifications
-│       ├── widgets/         # Reusable components
-│       ├── title_bar.py     # Custom frameless title bar
-│       └── main_window.py   # Top-level window
-├── assets/themes/           # Light & dark QSS stylesheets
-├── scripts/                 # Build, dev, lint, test runners
-├── installer/               # Inno Setup configuration
-├── tests/                   # Pytest test suite
-└── docs/                    # Architecture documentation
-```
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+1` … `Ctrl+4` | Dashboard / Explorer / AI Chat / History |
+| `Ctrl+K` | Jump to the chat input |
+| `Ctrl+F` / `Alt+D` | Search this view / edit the path |
+| `Alt+←` `Alt+→` `Alt+↑` `Backspace` | Back / forward / up |
+| `F2` / `Del` / `Ctrl+Shift+N` | Rename / delete to Recycle Bin / new folder |
+| `F5` | Refresh |
+| `Ctrl+Shift+Z` | Undo the last operation |
+| `Ctrl+L` / `Ctrl+,` / `Ctrl+Q` | Lock / Settings / Quit |
+| `Ctrl+Shift+Space` (global) | Show or hide OP(AI)UM from anywhere |
 
 ---
 
-## 🛠️ AI Tools
-
-
-| Tool                   | Type       | Description                             |
-| ---------------------- | ---------- | --------------------------------------- |
-| `count_files`          | Read       | Count files with filters                |
-| `get_file_sizes`       | Read       | Size analysis (total/breakdown/largest) |
-| `summarize_file_types` | Read       | File type breakdown                     |
-| `find_large_files`     | Read       | Files above size threshold              |
-| `find_duplicates`      | Read       | MD5 hash-based duplicate detection      |
-| `analyze_file_ages`    | Read       | Find stale/old files                    |
-| `read_metadata`        | Read       | Image dimensions, file metadata         |
-| `disk_usage`           | Read       | Drive info and folder usage             |
-| `startup_programs`     | Read       | List Windows startup programs           |
-| `recycle_bin`          | Read/Write | Query or empty Recycle Bin              |
-| `rename_files`         | Write      | Selective/batch rename                  |
-| `regex_rename`         | Write      | Pattern-based rename                    |
-| `change_extensions`    | Write      | Batch extension rename                  |
-| `move_files`           | Write      | Move with conflict resolution           |
-| `copy_files`           | Write      | Copy with conflict resolution           |
-| `delete_files`         | Write      | Delete to Recycle Bin                   |
-| `organize_by_type`     | Write      | Auto-sort into type folders             |
-| `organize_by_date`     | Write      | Sort into YYYY-MM folders               |
-| `flatten_folder`       | Write      | Un-nest folder structure                |
-| `clean_empty_folders`  | Write      | Find and remove empty dirs              |
-
-
----
-
-## 🔧 Development
+## Development
 
 ```bash
-# Lint & format
-python scripts/lint.py --fix
-
-# Run tests
-python scripts/run_tests.py --verbose --coverage
-
-# Build executable
-python scripts/build.py
-
-# Build msi
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-.\installer\wix\build_msi.ps1 -TagName "v1.0.0" -RepoRoot (Get-Location)
+python scripts/lint.py --fix                       # ruff + mypy
+python scripts/run_tests.py --verbose --coverage   # pytest
+python scripts/build.py                            # PyInstaller → dist/OPAIUM
+.\installer\wix\build_msi.ps1 -TagName "v2.0.0" -RepoRoot (Get-Location)   # MSI (WiX 3.11)
 ```
 
-These commands represent the core stages of a professional software development workflow. Let me break down what each means and why they matter.
+Pushing a tag like `v2.0.0` builds the ZIP and MSI on GitHub Actions and attaches them to a release.
+The version is defined once in `src/version.py`.
 
-## 📝 Overview: The Development Pipeline
-
-```mermaid
-flowchart LR
-    A[Source Code] --> B[Lint & Format]
-    B --> C[Run Tests]
-    C --> D[Build Executable]
-    D --> E[Deployable Application]
-```
-
-
-
-## 1. 🔍 Lint & Format (`python scripts/lint.py --fix`)
-
-### What is Linting?
-
-**Linting is the automated checking of your source code for programmatic and stylistic errors** 【turn0search1】【turn0search2】. It's like having a super-powered spelling and grammar checker for your code that catches:
-
-- **Programmatic errors**: Undefined variables, syntax mistakes, potential bugs 【turn0search2】
-- **Stylistic issues**: Inconsistent formatting, violations of coding standards 【turn0search3】
-- **Security vulnerabilities**: Some patterns that could lead to security issues 【turn0search2】
-- **Maintainability problems**: Code that's hard to read or maintain 【turn0search2】
-
-### What is Formatting?
-
-**Formatting focuses purely on code presentation and readability** 【turn0search2】. It automatically adjusts:
-
-- Indentation and spacing
-- Line length and wrapping
-- Bracket and parenthesis placement
-- Quote consistency
-- Other stylistic elements
-
-### Key Differences
-
-
-| Aspect            | Linting                       | Formatting                        |
-| ----------------- | ----------------------------- | --------------------------------- |
-| **Purpose**       | Find errors & enforce quality | Ensure consistent style           |
-| **Focus**         | Program logic & correctness   | Visual presentation               |
-| **Issues Found**  | Bugs, security flaws, errors  | Inconsistent spacing, line length |
-| **Auto-Fix**      | Some tools can auto-fix       | Primarily auto-fixes              |
-| **Example Tools** | ESLint, Pylint, Ruff          | Prettier, Black, autopep8         |
-
-
-### In Your Context
-
-The command `python scripts/lint.py --fix` likely:
-
-1. **Runs a linter** (probably Ruff, as it's modern and fast 【turn0search4】) to check your Python code
-2. **Automatically fixes** what it can (like import sorting, simple style issues)
-3. **Reports remaining issues** that need manual attention
-
-> 💡 **Pro Tip**: Linters are highly configurable and can enforce team coding standards, making code reviews faster and onboarding easier 【turn0search2】【turn0search4】.
-
-## 2. 🧪 Run Tests (`python scripts/run_tests.py --verbose --coverage`)
-
-### What is Software Testing?
-
-**Software testing is the process of evaluating and verifying that a software product functions correctly, securely, and efficiently** 【turn0search5】. It involves:
-
-- **Verification**: Checking if the software meets requirements
-- **Validation**: Ensuring the software meets user needs
-- **Defect detection**: Finding bugs before users do 【turn0search6】
-
-### Types of Testing
-
-Based on your test dependencies (`pytest-qt`, `pytest-asyncio`), you're likely doing:
-
-
-| Test Type             | Purpose                                          | When to Use        |
-| --------------------- | ------------------------------------------------ | ------------------ |
-| **Unit Tests**        | Test individual components                       | During development |
-| **Integration Tests** | Test component interactions                      | After integration  |
-| **Functional Tests**  | Test features from user perspective              | Before release     |
-| **Regression Tests**  | Ensure new changes don't break existing features | After changes      |
-
-
-### In Your Context
-
-Your command:
-
-- `--verbose`: Shows detailed test output
-- `--coverage`: Measures how much of your code is tested
-
-This helps ensure your Qt6 application, OpenAI integrations, and database operations work correctly.
-
-> ⚠️ **Important**: Testing is critical for maintaining code quality and preventing bugs in production 【turn0search7】. It provides objective information about software quality 【turn0search8】.
-
-## 3. 🏗️ Build Executable (`python scripts/build.py`)
-
-### What is a Build?
-
-**A software build is the process of compiling source code into executable code ready for use** 【turn0search12】. It involves:
-
-```mermaid
-flowchart TD
-    A[Source Code<br/>Python, Qt UI] --> B[Dependency Resolution<br/>PySide6, OpenAI, etc.]
-    B --> C[Compilation/Translation<br/>Convert to machine code]
-    C --> D[Packaging<br/>Bundle with assets]
-    D --> E[Executable Creation<br/>.exe for Windows]
-```
-
-
-
-### What is an Executable?
-
-**An executable is a file that contains instructions the operating system can run** 【turn0search11】. For your project:
-
-- On Windows: A `.exe` file that launches your Qt application
-- Contains your Python code, dependencies, and resources
-- Allows users to run your application without installing Python
-
-### Build Types
-
-Your script might perform either:
-
-
-| Build Type            | Description                    | Advantage                  |
-| --------------------- | ------------------------------ | -------------------------- |
-| **Full Build**        | Starts from scratch every time | Clean, predictable results |
-| **Incremental Build** | Only rebuilds changed parts    | Faster for small changes   |
-
-
-### In Your Context
-
-The command `python scripts/build.py` likely:
-
-1. **Uses `cx-Freeze`** (from your requirements) to bundle your Python application
-2. **Creates a standalone executable** that includes:
-  - Your Python code
-  - Qt6 libraries (PySide6)
-  - All dependencies (OpenAI, sounddevice, etc.)
-  - Resources (icons, images, etc.)
-3. **Produces a distributable file** that users can run without technical knowledge
-
-> 🔧 **Technical Note**: The build process transforms your human-readable code into machine-executable format 【turn0search10】, resolving dependencies and creating a deployable package 【turn0search12】.
-
-## 🎯 Why These Steps Matter in Your Workflow
-
-### For Your OP(AI)UM Project:
-
-1. **Lint & Format**: Ensures your Qt6 UI code, OpenAI API calls, and database interactions are clean and maintainable
-2. **Run Tests**: Verifies your speech recording, database operations, and encryption work correctly
-3. **Build Executable**: Creates a Windows application users can install and run easily
-
-### Integration Benefits:
-
-- **Consistency**: Enforced coding standards across all team members 【turn0search4】
-- **Quality**: Automated checks catch errors before they become problems 【turn0search2】
-- **Reliability**: Tests ensure features work as expected 【turn0search5】
-- **Deployability**: Executables simplify distribution to end users 【turn0search12】
-
-## 📊 Summary Comparison
-
-
-| Stage                | Input            | Output                        | Primary Tool | Purpose                      |
-| -------------------- | ---------------- | ----------------------------- | ------------ | ---------------------------- |
-| **Lint & Format**    | Source code      | Clean, consistent code        | Ruff, Black  | Catch errors & enforce style |
-| **Run Tests**        | Application code | Test results, coverage report | pytest       | Verify functionality         |
-| **Build Executable** | Tested code      | Standalone application        | cx-Freeze    | Create distributable program |
-
-
-These commands form a **quality assurance pipeline** that transforms your development code into a polished, reliable application ready for users. Each step builds on the previous one, ensuring that only properly formatted, tested code gets built into the final executable.
+Docs: [architecture](docs/architecture.md) · [configuration](docs/configuration.md) ·
+[theming](docs/theming.md) · [adding tools](docs/adding_tools.md) · [AI capabilities](docs/AI_CAPABILITIES.md) ·
+[development](docs/DEVELOPMENT.md) · [installer](installer/README.md) · [changelog](CHANGELOG.md)
 
 ---
 
-The correct order depends on what you are trying to achieve. Here are the two most common workflows:
+## Project layout
 
-### 1. The "Quality Gate" Workflow (Recommended for Finalizing)
-
-If you have finished coding and want to ensure your code is clean, correct, and ready to be packaged into an executable, run them in this order:
-
-```bash
-# 1. Clean the code (Fix style, find syntax errors)
-python scripts/lint.py --fix
-
-# 2. Verify logic (Ensure nothing is broken)
-python scripts/run_tests.py --verbose --coverage
-
-# 3. Package the application (Create the .exe)
-python scripts/build.py
-
-# Build msi
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-.\installer\wix\build_msi.ps1 -TagName "v1.0.0" -RepoRoot (Get-Location)
 ```
-
-**Why this order?**
-
-- **Lint first:** It automatically fixes style issues and catches syntax errors. There is no point in testing code that has syntax errors.
-- **Test second:** There is no point in building an executable (`build.py`) if the application crashes or the tests fail.
-- **Build last:** You only package the application once you have verified it works.
+src/
+├── main.py, app.py        entry point and application controller
+├── services/              update check, global hotkey, notifications, idle lock
+├── ui/                    theme system, native window, dashboard, explorer, chat, history, settings
+├── ai/                    engine, OpenAI-compatible client, safety gate, 22 tools
+├── core/                  Recent parser, directory scanner, watcher, Recycle Bin, disks, stats
+├── undo/                  journal, undo manager, content backups, auto-purge
+├── config/                constants, defaults, encryption, config manager
+└── auth/                  Argon2id auth, lock screen, first-run wizard
+assets/                    icons (SVG set + logo), themes/base.qss
+installer/                 WiX MSI, optional Inno Setup script
+scripts/                   build, lint, tests, dev runners, icon generator
+tests/                     pytest suite
+```
 
 ---
 
-### 2. The "Active Development" Workflow
+## License
 
-If you are currently coding and want to see your changes, `run_dev.py` is your primary tool. You typically run it *before* the others, or in a separate terminal window.
+MIT — see [LICENSE](LICENSE).
 
-```bash
-# 1. Run the app to see your changes live
-python scripts/run_dev.py
-
-# (While the app runs or after you close it...)
-# 2. Clean up & Test before committing your code
-python scripts/lint.py --fix
-python scripts/run_tests.py --verbose --coverage
-```
-
-### Summary Rule of Thumb
-
-- **Run Dev**: While you are building/writing code.
-- **Lint**: Before you commit code (to clean it up).
-- **Test**: Before you build (to prove it works).
-- **Build**: When you are ready to release/distribute.
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-Built with ❤️ by **Sankar Balasubramanian**
+Built by **Sankar Balasubramanian**.
