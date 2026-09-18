@@ -7,11 +7,18 @@ Qt-based worker classes for running long operations
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Callable
 from typing import Any
 
 from loguru import logger
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
+
+
+def _safe_emit(signal: Any, *args: Any) -> None:
+    """Emit unless the receiver side was torn down (app shutting down)."""
+    with contextlib.suppress(RuntimeError):
+        signal.emit(*args)
 
 
 class WorkerSignals(QObject):
@@ -52,14 +59,14 @@ class Worker(QRunnable):
     def run(self) -> None:
         """Execute the worker function."""
         try:
-            self.signals.started.emit()
+            _safe_emit(self.signals.started)
             result = self.fn(*self.args, **self.kwargs)
-            self.signals.result.emit(result)
+            _safe_emit(self.signals.result, result)
         except Exception as e:
-            logger.error(f"Worker error in {self.fn.__name__}: {e}")
-            self.signals.error.emit(str(e))
+            logger.error(f"Worker error in {getattr(self.fn, '__name__', 'worker')}: {e}")
+            _safe_emit(self.signals.error, str(e))
         finally:
-            self.signals.finished.emit()
+            _safe_emit(self.signals.finished)
 
 
 class ProgressWorker(QRunnable):
@@ -98,18 +105,18 @@ class ProgressWorker(QRunnable):
     def run(self) -> None:
         """Execute with progress callback injected."""
         try:
-            self.signals.started.emit()
+            _safe_emit(self.signals.started)
 
             def progress_callback(current: int, total: int) -> None:
-                self.signals.progress.emit(current, total)
+                _safe_emit(self.signals.progress, current, total)
 
             result = self.fn(progress_callback, *self.args, **self.kwargs)
-            self.signals.result.emit(result)
+            _safe_emit(self.signals.result, result)
         except Exception as e:
-            logger.error(f"ProgressWorker error in {self.fn.__name__}: {e}")
-            self.signals.error.emit(str(e))
+            logger.error(f"ProgressWorker error in {getattr(self.fn, '__name__', 'worker')}: {e}")
+            _safe_emit(self.signals.error, str(e))
         finally:
-            self.signals.finished.emit()
+            _safe_emit(self.signals.finished)
 
 
 class ThreadPoolManager:

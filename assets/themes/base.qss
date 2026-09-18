@@ -1,0 +1,1459 @@
+/*
+ * OP(AI)UM — Design System Stylesheet (template)
+ *
+ * Tokens (at-sign + name) are substituted at runtime by src/ui/theme.py with the
+ * light or dark palette. Do not hard-code colors here.
+ */
+
+/* ===================== Global ===================== */
+QWidget {
+    background-color: @bg_base;
+    color: @text;
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 10pt;
+    selection-background-color: @selection;
+    selection-color: @text;
+}
+
+QWidget:disabled {
+    color: @text_faint;
+}
+
+QMainWindow, QDialog {
+    background-color: @bg_base;
+}
+
+QToolTip {
+    background-color: @tooltip_bg;
+    color: @text;
+    border: 1px solid @border_strong;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 9pt;
+}
+
+QLabel {
+    background: transparent;
+}
+
+QFrame[role="separator"] {
+    background-color: @border;
+    max-height: 1px;
+    min-height: 1px;
+    border: none;
+}
+
+/* ===================== Buttons ===================== */
+QPushButton {
+    background-color: @bg_surface1;
+    border: 1px solid @border;
+    border-radius: 8px;
+    padding: 6px 14px;
+    color: @text;
+}
+
+QPushButton:hover {
+    background-color: @bg_surface2;
+    border-color: @border_strong;
+}
+
+QPushButton:pressed {
+    background-color: @bg_surface0;
+}
+
+QPushButton:disabled {
+    background-color: @bg_surface0;
+    color: @text_faint;
+    border-color: @border;
+}
+
+QPushButton:focus {
+    outline: none;
+    border-color: @accent_border;
+}
+
+QPushButton[variant="primary"], #settingsSaveBtn, #authUnlockBtn, #setupNextBtn, #sendButton, #approvalApproveBtn {
+    background-color: @accent;
+    color: @accent_text;
+    border: none;
+    font-weight: 600;
+}
+
+QPushButton[variant="primary"]:hover, #settingsSaveBtn:hover, #authUnlockBtn:hover, #setupNextBtn:hover, #sendButton:hover, #approvalApproveBtn:hover {
+    background-color: @accent_hover;
+}
+
+QPushButton[variant="primary"]:pressed, #settingsSaveBtn:pressed, #authUnlockBtn:pressed, #setupNextBtn:pressed, #sendButton:pressed, #approvalApproveBtn:pressed {
+    background-color: @accent_pressed;
+}
+
+QPushButton[variant="primary"]:disabled, #sendButton:disabled {
+    background-color: @bg_surface2;
+    color: @text_faint;
+}
+
+QPushButton[variant="ghost"], #navBtn, #titleSettingsBtn, #titleLockBtn, #viewToggleBtn, #previewActionBtn, #historyRefreshBtn, #setupShowKeyBtn, #setupBackBtn, #setupSkipBtn, #authLinkBtn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: @text_sub;
+    padding: 4px 10px;
+}
+
+QPushButton[variant="ghost"]:hover, #navBtn:hover, #titleSettingsBtn:hover, #titleLockBtn:hover, #viewToggleBtn:hover, #previewActionBtn:hover, #historyRefreshBtn:hover, #setupShowKeyBtn:hover, #setupBackBtn:hover, #setupSkipBtn:hover, #authLinkBtn:hover {
+    background-color: @bg_surface1;
+    color: @text;
+}
+
+QPushButton[variant="ghost"]:disabled, #navBtn:disabled {
+    color: @text_faint;
+    background: transparent;
+}
+
+#viewToggleBtn:checked {
+    background-color: @accent_soft;
+    border-color: @accent_border;
+    color: @accent;
+}
+
+QPushButton[variant="danger"], #settingsDangerBtn {
+    background-color: @red_soft;
+    border: 1px solid @red;
+    color: @red;
+}
+
+QPushButton[variant="danger"]:hover, #settingsDangerBtn:hover {
+    background-color: @red;
+    color: @accent_text;
+}
+
+QPushButton[variant="subtle"], #settingsActionBtn, #dashActionBtn {
+    background-color: @accent_soft;
+    border: 1px solid @accent_border;
+    color: @accent;
+    font-weight: 600;
+}
+
+QPushButton[variant="subtle"]:hover, #settingsActionBtn:hover, #dashActionBtn:hover {
+    background-color: @accent;
+    color: @accent_text;
+}
+
+/* ===================== Inputs ===================== */
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: @bg_surface0;
+    border: 1.5px solid @border;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: @text;
+    selection-background-color: @selection;
+}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border-color: @accent;
+    background-color: @bg_base;
+}
+
+QLineEdit:disabled, QTextEdit:disabled {
+    color: @text_faint;
+    background-color: @bg_surface0;
+}
+
+QComboBox {
+    background-color: @bg_surface0;
+    border: 1.5px solid @border;
+    border-radius: 8px;
+    padding: 5px 30px 5px 10px;
+    color: @text;
+    min-height: 22px;
+}
+
+QComboBox:hover {
+    border-color: @border_strong;
+}
+
+QComboBox:focus, QComboBox:on {
+    border-color: @accent;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 26px;
+    border: none;
+}
+
+QComboBox::down-arrow {
+    image: url(@svg_dir/chevron-down.svg);
+    width: 12px;
+    height: 12px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: @bg_surface0;
+    border: 1px solid @border_strong;
+    border-radius: 8px;
+    padding: 4px;
+    selection-background-color: @accent_soft;
+    selection-color: @text;
+    outline: none;
+}
+
+QComboBox QAbstractItemView::item {
+    padding: 6px 10px;
+    border-radius: 6px;
+    min-height: 22px;
+}
+
+QSpinBox, QDoubleSpinBox {
+    background-color: @bg_surface0;
+    border: 1.5px solid @border;
+    border-radius: 8px;
+    padding: 4px 8px;
+    color: @text;
+}
+
+QSpinBox:focus, QDoubleSpinBox:focus {
+    border-color: @accent;
+}
+
+QSpinBox::up-button, QSpinBox::down-button {
+    width: 18px;
+    border: none;
+    background: transparent;
+}
+
+QSpinBox::up-arrow {
+    image: url(@svg_dir/chevron-up.svg);
+    width: 10px;
+    height: 10px;
+}
+
+QSpinBox::down-arrow {
+    image: url(@svg_dir/chevron-down.svg);
+    width: 10px;
+    height: 10px;
+}
+
+QCheckBox, QRadioButton {
+    spacing: 8px;
+    background: transparent;
+}
+
+QCheckBox::indicator, QRadioButton::indicator {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid @border_strong;
+    background-color: @bg_surface0;
+}
+
+QCheckBox::indicator {
+    border-radius: 5px;
+}
+
+QRadioButton::indicator {
+    border-radius: 9px;
+}
+
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+    background-color: @accent;
+    border-color: @accent;
+}
+
+QCheckBox::indicator:checked {
+    image: url(@svg_dir/check.svg);
+}
+
+QRadioButton::indicator:checked {
+    image: url(@svg_dir/dot.svg);
+}
+
+QGroupBox {
+    border: 1px solid @border;
+    border-radius: 10px;
+    margin-top: 14px;
+    padding: 14px 10px 8px 10px;
+    font-weight: 600;
+    color: @text_sub;
+    background-color: @bg_surface0;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 12px;
+    padding: 0 6px;
+    color: @text_sub;
+    background-color: @bg_base;
+}
+
+QProgressBar {
+    background-color: @bg_surface1;
+    border: none;
+    border-radius: 4px;
+    height: 8px;
+    text-align: center;
+    color: transparent;
+}
+
+QProgressBar::chunk {
+    background-color: @accent;
+    border-radius: 4px;
+}
+
+QSlider::groove:horizontal {
+    height: 4px;
+    background: @bg_surface2;
+    border-radius: 2px;
+}
+
+QSlider::handle:horizontal {
+    width: 16px;
+    margin: -6px 0;
+    border-radius: 8px;
+    background: @accent;
+}
+
+/* ===================== Menus ===================== */
+QMenu, #contextMenu {
+    background-color: @bg_surface0;
+    border: 1px solid @border_strong;
+    border-radius: 10px;
+    padding: 6px;
+}
+
+QMenu::item, #contextMenu::item {
+    padding: 7px 28px 7px 14px;
+    border-radius: 6px;
+    color: @text;
+    background: transparent;
+}
+
+QMenu::item:selected, #contextMenu::item:selected {
+    background-color: @accent_soft;
+    color: @accent;
+}
+
+QMenu::item:disabled {
+    color: @text_faint;
+}
+
+QMenu::separator {
+    height: 1px;
+    background: @border;
+    margin: 6px 8px;
+}
+
+QMenu::icon {
+    padding-left: 8px;
+}
+
+/* ===================== Scrollbars ===================== */
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical {
+    background: @scroll_handle;
+    border-radius: 3px;
+    min-height: 36px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: @scroll_handle_hover;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    height: 0;
+    background: none;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 10px;
+    margin: 2px;
+}
+
+QScrollBar::handle:horizontal {
+    background: @scroll_handle;
+    border-radius: 3px;
+    min-width: 36px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: @scroll_handle_hover;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal,
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    width: 0;
+    background: none;
+}
+
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+
+QAbstractScrollArea > QWidget > QWidget {
+    background: transparent;
+}
+
+/* ===================== Tabs (settings) ===================== */
+#settingsTabs::pane {
+    border: 1px solid @border;
+    border-radius: 10px;
+    background-color: @bg_base;
+    top: -1px;
+}
+
+#settingsTabs QTabBar::tab {
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 18px;
+    margin-right: 4px;
+    color: @text_muted;
+    font-weight: 600;
+}
+
+#settingsTabs QTabBar::tab:hover {
+    color: @text;
+}
+
+#settingsTabs QTabBar::tab:selected {
+    color: @accent;
+    border-bottom: 2px solid @accent;
+}
+
+/* ===================== Splitter ===================== */
+QSplitter::handle {
+    background-color: @border;
+}
+
+QSplitter::handle:hover {
+    background-color: @accent_border;
+}
+
+/* ===================== Item views ===================== */
+QTreeView, QListView, QTableView {
+    background-color: transparent;
+    border: none;
+    color: @text;
+    outline: none;
+    alternate-background-color: @bg_surface0;
+}
+
+QTreeView::item, QListView::item, QTableView::item {
+    padding: 5px 4px;
+    border-radius: 6px;
+}
+
+QTreeView::item:hover, QListView::item:hover, QTableView::item:hover {
+    background-color: @bg_hover;
+}
+
+QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {
+    background-color: @accent_soft;
+    color: @accent;
+}
+
+QTreeView::branch {
+    background: transparent;
+}
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings {
+    image: url(@svg_dir/chevron-right.svg);
+}
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings {
+    image: url(@svg_dir/chevron-down.svg);
+}
+
+QHeaderView::section {
+    background-color: @bg_mantle;
+    color: @text_muted;
+    border: none;
+    border-bottom: 1px solid @border;
+    padding: 6px 8px;
+    font-weight: 600;
+}
+
+/* ===================== Main window chrome ===================== */
+#mainCentral {
+    background-color: @bg_base;
+}
+
+#titleBar {
+    background-color: @bg_mantle;
+    border-bottom: 1px solid @border;
+}
+
+#titleAppName {
+    color: @text;
+    font-weight: 700;
+    font-size: 11pt;
+}
+
+#titleTab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 4px 14px;
+    color: @text_muted;
+    font-weight: 600;
+}
+
+#titleTab:hover {
+    background-color: @bg_surface0;
+    color: @text;
+}
+
+#titleTab:checked {
+    background-color: @accent_soft;
+    border-color: @accent_border;
+    color: @accent;
+}
+
+#titleMinBtn, #titleMaxBtn, #titleCloseBtn {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: @text_muted;
+}
+
+#titleMinBtn:hover, #titleMaxBtn:hover, #titleMinBtn[hover="true"], #titleMaxBtn[hover="true"] {
+    background-color: @bg_surface1;
+    color: @text;
+}
+
+#titleCloseBtn:hover, #titleCloseBtn[hover="true"] {
+    background-color: #E81123;
+    color: #FFFFFF;
+}
+
+#titleTab {
+    text-align: left;
+}
+
+#updateBanner {
+    background-color: @accent_soft;
+    border-bottom: 1px solid @accent_border;
+}
+
+#updateBannerText {
+    color: @text;
+}
+
+#updateBannerBtn {
+    background-color: @accent;
+    color: @accent_text;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+
+#updateBannerBtn:hover {
+    background-color: @accent_hover;
+}
+
+#updateBannerClose {
+    background: transparent;
+    border: none;
+    color: @text_muted;
+    border-radius: 6px;
+}
+
+#updateBannerClose:hover {
+    background-color: @bg_surface1;
+    color: @text;
+}
+
+#statusBar {
+    background-color: @bg_mantle;
+    border-top: 1px solid @border;
+}
+
+#statusLabel {
+    color: @text_muted;
+    font-size: 9pt;
+}
+
+/* ===================== Explorer ===================== */
+#explorerToolbar {
+    background-color: @bg_mantle;
+    border-bottom: 1px solid @border;
+}
+
+#navBtn {
+    padding: 0;
+}
+
+#breadcrumb {
+    background-color: @bg_surface0;
+    border: 1.5px solid @border;
+    border-radius: 8px;
+}
+
+#breadcrumb:hover {
+    border-color: @border_strong;
+}
+
+#breadcrumbBtn {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: @text_sub;
+}
+
+#breadcrumbBtn:hover {
+    background-color: @bg_surface1;
+    color: @text;
+}
+
+#breadcrumbBtn[current="true"] {
+    color: @text;
+    font-weight: 600;
+}
+
+#breadcrumbSep {
+    color: @text_faint;
+}
+
+#pathEdit {
+    background-color: @bg_surface0;
+    border: 1.5px solid @accent;
+    border-radius: 8px;
+    padding: 4px 10px;
+}
+
+#searchInput {
+    background-color: @bg_surface0;
+    border: 1.5px solid @border;
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: @text;
+}
+
+#searchInput:focus {
+    border-color: @accent;
+}
+
+#typeFilter, #sortCombo {
+    background-color: @bg_surface0;
+    border: 1.5px solid @border;
+    border-radius: 8px;
+    padding: 4px 28px 4px 10px;
+    color: @text;
+}
+
+#refreshBtn {
+    background-color: @accent_soft;
+    border: 1px solid @accent_border;
+    border-radius: 8px;
+    color: @accent;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+
+#refreshBtn:hover {
+    background-color: @accent;
+    color: @accent_text;
+}
+
+#explorerSplitter::handle {
+    background-color: @border;
+    width: 1px;
+}
+
+#treeHeader {
+    background-color: @bg_mantle;
+    border: none;
+    color: @text_muted;
+    font-weight: 600;
+    padding-left: 12px;
+}
+
+#treePanel {
+    background-color: @bg_mantle;
+}
+
+#folderTree {
+    background-color: @bg_mantle;
+    border: none;
+    color: @text;
+}
+
+#folderTree::item {
+    padding: 5px 2px;
+    border-radius: 6px;
+}
+
+#folderTree::item:selected {
+    background-color: @accent_soft;
+    color: @accent;
+}
+
+#folderTree::item:hover:!selected {
+    background-color: @bg_hover;
+}
+
+#cardGridScroll {
+    background-color: @bg_base;
+    border: none;
+}
+
+#folderCard, #fileCard {
+    background-color: @bg_surface0;
+    border: 1px solid @border;
+    border-radius: 12px;
+}
+
+#folderCard:hover, #fileCard:hover {
+    background-color: @bg_hover;
+    border-color: @border_strong;
+}
+
+#folderCard[selected="true"], #fileCard[selected="true"] {
+    background-color: @accent_soft;
+    border: 1px solid @accent;
+}
+
+#folderCardName, #fileCardName {
+    color: @text;
+}
+
+#folderCardCount, #folderCardTime, #fileCardSize, #fileCardTime {
+    color: @text_faint;
+}
+
+#fileCardExt {
+    color: @accent;
+    background-color: @accent_soft;
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+
+#folderCardBroken {
+    color: @red;
+}
+
+#fileListView {
+    background-color: @bg_base;
+}
+
+#fileListView::item {
+    padding: 4px 6px;
+}
+
+#collapsibleHeader {
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+}
+
+#collapsibleHeader:hover {
+    background-color: @bg_surface0;
+}
+
+#collapsibleTitle {
+    color: @text_sub;
+}
+
+#collapsibleArrow {
+    color: @text_faint;
+}
+
+#collapsibleCount {
+    background-color: @bg_surface1;
+    color: @text_muted;
+    border-radius: 11px;
+    padding: 0 8px;
+}
+
+#groupHeaderTitle {
+    color: @text_sub;
+}
+
+#groupHeaderCount, #groupHeaderArrow {
+    color: @text_faint;
+}
+
+#emptyState {
+    background: transparent;
+}
+
+#emptyStateTitle {
+    color: @text_sub;
+    font-size: 13pt;
+    font-weight: 600;
+}
+
+#emptyStateText {
+    color: @text_faint;
+}
+
+/* Preview */
+#previewPanel {
+    background-color: @bg_mantle;
+    border-left: 1px solid @border;
+}
+
+#previewHeader {
+    color: @text_muted;
+    font-weight: 600;
+}
+
+#previewSeparator {
+    color: @border;
+    background-color: @border;
+}
+
+#previewName {
+    color: @text;
+}
+
+#previewLabel {
+    color: @text_faint;
+    font-weight: 600;
+    font-size: 8pt;
+}
+
+#previewValue {
+    color: @text_sub;
+}
+
+#previewEmpty {
+    color: @text_faint;
+}
+
+#previewThumb {
+    background-color: @bg_surface0;
+    border: 1px solid @border;
+    border-radius: 10px;
+}
+
+/* ===================== Chat ===================== */
+#chatHeader {
+    background-color: @bg_mantle;
+    border-bottom: 1px solid @border;
+}
+
+#chatHeaderTitle {
+    color: @text;
+    font-weight: 700;
+}
+
+#chatHeaderModel {
+    color: @text_faint;
+    font-size: 9pt;
+}
+
+#chatScroll {
+    background-color: @bg_base;
+}
+
+#bubble_user {
+    background-color: @user_bubble;
+    border: 1px solid @user_bubble_border;
+    border-radius: 14px;
+    padding: 4px;
+    min-width: 80px;
+}
+
+#bubbleContent_user {
+    color: @user_bubble_text;
+    background: transparent;
+}
+
+#bubble_assistant {
+    background-color: @bg_surface0;
+    border: 1px solid @border;
+    border-radius: 14px;
+    padding: 4px;
+    min-width: 80px;
+}
+
+#bubbleContent_assistant {
+    color: @text;
+    background: transparent;
+}
+
+#bubble_system {
+    background-color: @yellow_soft;
+    border: 1px solid @yellow;
+    border-radius: 10px;
+    padding: 4px;
+}
+
+#bubbleContent_system {
+    color: @text_sub;
+    background: transparent;
+}
+
+#bubbleRole {
+    color: @accent;
+    background: transparent;
+}
+
+#bubbleTime_assistant, #bubbleTime_system {
+    color: @text_faint;
+    background: transparent;
+}
+
+#bubbleTime_user {
+    color: @text_faint;
+    background: transparent;
+}
+
+#chatContextCard {
+    background: transparent;
+}
+
+#contextCardInner {
+    background-color: @accent_soft;
+    border: 1px solid @accent_border;
+    border-radius: 10px;
+    padding: 2px;
+}
+
+#contextCardName {
+    color: @text;
+    background: transparent;
+}
+
+#contextCardPath {
+    color: @text_muted;
+    background: transparent;
+}
+
+#contextCardType {
+    color: @accent;
+    background-color: @accent_soft;
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+#contextCardIcon {
+    background: transparent;
+}
+
+#convSidebar {
+    background-color: @bg_mantle;
+    border-right: 1px solid @border;
+}
+
+#convSidebarHeader {
+    background-color: @bg_mantle;
+    border-bottom: 1px solid @border;
+}
+
+#convSidebarTitle {
+    color: @text_muted;
+    font-weight: 600;
+}
+
+#convNewBtn {
+    background-color: @accent_soft;
+    border: 1px solid @accent_border;
+    border-radius: 8px;
+    color: @accent;
+    padding: 0;
+}
+
+#convNewBtn:hover {
+    background-color: @accent;
+    color: @accent_text;
+}
+
+#convSidebarScroll {
+    background-color: @bg_mantle;
+}
+
+#convItem {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 2px;
+}
+
+#convItem:hover {
+    background-color: @bg_hover;
+}
+
+#convItem[selected="true"] {
+    background-color: @accent_soft;
+    border-color: @accent_border;
+}
+
+#convItemTitle {
+    color: @text;
+    background: transparent;
+}
+
+#convItemFolder {
+    color: @text_muted;
+    background: transparent;
+}
+
+#convItemTime {
+    color: @text_faint;
+    background: transparent;
+}
+
+#convEmptyLabel {
+    color: @text_faint;
+}
+
+#convSeparator {
+    color: @border;
+}
+
+#markdownBrowser {
+    background: transparent;
+    border: none;
+    color: @text;
+}
+
+#chatInputBar {
+    background-color: @bg_mantle;
+    border-top: 1px solid @border;
+}
+
+#chatInput {
+    background-color: @bg_surface0;
+    border: 1.5px solid @border;
+    border-radius: 12px;
+    padding: 8px 10px;
+    color: @text;
+}
+
+#chatInput:focus {
+    border-color: @accent;
+}
+
+#sendButton {
+    border-radius: 12px;
+}
+
+#stopButton {
+    background-color: @red_soft;
+    border: 1px solid @red;
+    border-radius: 12px;
+    color: @red;
+    font-weight: 600;
+}
+
+#stopButton:hover {
+    background-color: @red;
+    color: @accent_text;
+}
+
+#micButton {
+    background-color: @bg_surface0;
+    border: 1.5px solid @border;
+    border-radius: 21px;
+}
+
+#micButton:hover {
+    background-color: @bg_surface1;
+    border-color: @border_strong;
+}
+
+#micButtonActive {
+    background-color: @red_soft;
+    border: 2px solid @red;
+    border-radius: 21px;
+}
+
+#actionChip {
+    background-color: @bg_surface0;
+    border: 1px solid @border;
+    border-radius: 14px;
+    padding: 2px 12px;
+    color: @text_sub;
+}
+
+#actionChip:hover {
+    background-color: @accent_soft;
+    border-color: @accent_border;
+    color: @accent;
+}
+
+#chipScroll {
+    background: transparent;
+}
+
+#toolCard {
+    background-color: @bg_surface0;
+    border: 1px solid @border;
+    border-radius: 10px;
+}
+
+#toolCard[status="running"] {
+    border-color: @accent_border;
+    background-color: @accent_soft;
+}
+
+#toolCard[status="ok"] {
+    border-color: @green;
+    background-color: @green_soft;
+}
+
+#toolCard[status="err"] {
+    border-color: @red;
+    background-color: @red_soft;
+}
+
+#toolCard[status="cancelled"] {
+    border-color: @peach;
+    background-color: @peach_soft;
+}
+
+#toolCardName {
+    color: @text;
+    font-weight: 600;
+}
+
+#toolCardStatus {
+    color: @text_muted;
+    font-size: 8pt;
+    font-weight: 600;
+}
+
+#toolCardMessage {
+    color: @text_sub;
+}
+
+#toolCardUndoBtn {
+    background-color: @peach_soft;
+    border: 1px solid @peach;
+    border-radius: 6px;
+    color: @peach;
+    padding: 2px 10px;
+    font-weight: 600;
+}
+
+#toolCardUndoBtn:hover {
+    background-color: @peach;
+    color: @accent_text;
+}
+
+#typingLabel {
+    color: @text_faint;
+}
+
+/* Approval dialog */
+#approvalHeader {
+    color: @peach;
+}
+
+#approvalDescription {
+    color: @text_sub;
+}
+
+#approvalPreview {
+    background-color: @code_bg;
+    border: 1px solid @border;
+    border-radius: 8px;
+    color: @text;
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 9pt;
+    padding: 8px;
+}
+
+#approvalWarning {
+    color: @peach;
+}
+
+#approvalRejectBtn {
+    background-color: @bg_surface1;
+    border: 1px solid @border_strong;
+    border-radius: 8px;
+    color: @text_sub;
+}
+
+#approvalRejectBtn:hover {
+    background-color: @bg_surface2;
+}
+
+#approvalApproveBtn {
+    background-color: @green;
+    color: @accent_text;
+    border-radius: 8px;
+}
+
+#approvalApproveBtn:hover {
+    background-color: @green;
+}
+
+/* ===================== History ===================== */
+#historyTitle {
+    color: @text;
+}
+
+#historyCount {
+    color: @text_faint;
+}
+
+#historyRow {
+    background-color: @bg_surface0;
+    border: 1px solid @border;
+    border-radius: 10px;
+}
+
+#historyRow:hover {
+    background-color: @bg_hover;
+    border-color: @border_strong;
+}
+
+#historyIcon {
+    background-color: @accent_soft;
+    border-radius: 16px;
+}
+
+#historyDesc {
+    color: @text;
+}
+
+#historyMeta {
+    color: @text_faint;
+}
+
+#historyUndone {
+    color: @text_faint;
+}
+
+#historyUndoBtn {
+    background-color: @peach_soft;
+    border: 1px solid @peach;
+    border-radius: 6px;
+    color: @peach;
+    font-weight: 600;
+}
+
+#historyUndoBtn:hover {
+    background-color: @peach;
+    color: @accent_text;
+}
+
+#historyClearBtn {
+    background-color: transparent;
+    border: 1px solid @border;
+    border-radius: 6px;
+    color: @red;
+    padding: 2px 10px;
+}
+
+#historyClearBtn:hover {
+    background-color: @red;
+    border-color: @red;
+    color: @accent_text;
+}
+
+#historyDeleteBtn {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: @text_faint;
+}
+
+#historyDeleteBtn:hover {
+    background-color: @red_soft;
+    color: @red;
+}
+
+#historyEmpty {
+    color: @text_faint;
+}
+
+/* ===================== Dashboard ===================== */
+#dashboardScroll {
+    background-color: @bg_base;
+}
+
+#dashCard {
+    background-color: @bg_surface0;
+    border: 1px solid @border;
+    border-radius: 14px;
+}
+
+#dashCard:hover {
+    border-color: @border_strong;
+}
+
+#dashCardTitle {
+    color: @text;
+    font-weight: 700;
+    font-size: 11pt;
+}
+
+#dashCardSubtitle {
+    color: @text_faint;
+    font-size: 9pt;
+}
+
+#dashValue {
+    color: @text;
+    font-weight: 700;
+    font-size: 18pt;
+}
+
+#dashLabel {
+    color: @text_muted;
+    font-size: 9pt;
+}
+
+#dashListItem {
+    background-color: transparent;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+
+#dashListItem:hover {
+    background-color: @bg_hover;
+    border-color: @border;
+}
+
+#dashListItemName {
+    color: @text;
+}
+
+#dashListItemMeta {
+    color: @text_faint;
+    font-size: 9pt;
+}
+
+#dashHero {
+    background-color: @accent_soft;
+    border: 1px solid @accent_border;
+    border-radius: 16px;
+}
+
+#dashHeroTitle {
+    color: @text;
+    font-size: 16pt;
+    font-weight: 700;
+}
+
+#dashHeroText {
+    color: @text_sub;
+}
+
+/* ===================== Settings ===================== */
+#settingsGroup {
+    border: 1px solid @border;
+    border-radius: 10px;
+    padding: 14px 10px 8px 10px;
+    margin-top: 14px;
+    background-color: @bg_surface0;
+}
+
+#settingsGroup::title {
+    color: @text_sub;
+    font-weight: 600;
+    background-color: @bg_base;
+}
+
+#settingsNote {
+    color: @text_faint;
+}
+
+#settingsError {
+    color: @red;
+}
+
+#settingsStatus {
+    color: @text_sub;
+}
+
+#settingsStatus[state="ok"] {
+    color: @green;
+}
+
+#settingsStatus[state="warn"] {
+    color: @peach;
+}
+
+#settingsStatus[state="err"] {
+    color: @red;
+}
+
+/* ===================== Auth / Setup ===================== */
+#authWindow, #setupWindow {
+    background-color: @bg_base;
+}
+
+#authAppName, #setupWelcome {
+    color: @text;
+}
+
+#authSubtitle, #setupFullName, #setupDescription, #setupNote, #setupStep {
+    color: @text_muted;
+}
+
+#authSeparator {
+    color: @border;
+    background-color: @border;
+}
+
+#authInstruction, #setupFieldLabel {
+    color: @text_sub;
+}
+
+#authInput, #setupInput {
+    background-color: @bg_surface0;
+    border: 2px solid @border;
+    border-radius: 10px;
+    padding: 8px;
+    color: @text;
+}
+
+#authInput:focus, #setupInput:focus {
+    border-color: @accent;
+}
+
+#authError, #setupError {
+    color: @red;
+}
+
+#authAttempts {
+    color: @text_faint;
+}
+
+#authCloseBtn {
+    background-color: transparent;
+    color: @text_muted;
+    border: none;
+    border-radius: 16px;
+    font-weight: bold;
+}
+
+#authCloseBtn:hover {
+    background-color: @red;
+    color: @accent_text;
+}
+
+#authLinkBtn {
+    color: @accent;
+    text-decoration: underline;
+    padding: 2px 4px;
+}
+
+/* ===================== Misc ===================== */
+#toastNotification {
+    border-radius: 10px;
+}
+
+#badge {
+    border-radius: 9px;
+    padding: 1px 6px;
+    font-weight: 600;
+}

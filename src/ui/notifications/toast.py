@@ -11,7 +11,6 @@ from enum import StrEnum
 
 from loguru import logger
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer, Signal
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -36,18 +35,18 @@ class ToastNotification(QWidget):
 
     closed = Signal()
 
-    TYPE_COLORS = {
-        NotificationType.INFO: "#2196F3",
-        NotificationType.SUCCESS: "#4CAF50",
-        NotificationType.WARNING: "#FF9800",
-        NotificationType.ERROR: "#F44336",
+    TYPE_TOKENS = {
+        NotificationType.INFO: "accent",
+        NotificationType.SUCCESS: "green",
+        NotificationType.WARNING: "peach",
+        NotificationType.ERROR: "red",
     }
 
     TYPE_ICONS = {
-        NotificationType.INFO: "ℹ️",
-        NotificationType.SUCCESS: "✅",
-        NotificationType.WARNING: "⚠️",
-        NotificationType.ERROR: "❌",
+        NotificationType.INFO: "info",
+        NotificationType.SUCCESS: "check-circle",
+        NotificationType.WARNING: "warning",
+        NotificationType.ERROR: "error-circle",
     }
 
     def __init__(
@@ -62,13 +61,18 @@ class ToastNotification(QWidget):
         self._type = notification_type
 
         self.setObjectName("toastNotification")
-        self.setFixedHeight(48)
-        self.setMinimumWidth(300)
-        self.setMaximumWidth(600)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setFixedHeight(46)
+        self.setMinimumWidth(320)
+        self.setMaximumWidth(640)
 
-        color = self.TYPE_COLORS.get(notification_type, "#2196F3")
+        from src.ui.theme import token
+
+        accent = token(self.TYPE_TOKENS.get(notification_type, "accent"))
+        self._accent = accent
         self.setStyleSheet(
-            f"#toastNotification {{  background-color: {color};  border-radius: 8px;  padding: 4px 12px;}}"
+            f"#toastNotification {{ background-color: {token('bg_surface0')}; border: 1px solid {accent}; "
+            f"border-left: 4px solid {accent}; border-radius: 10px; padding: 4px 12px; }}"
         )
 
         self._build_ui(message, notification_type)
@@ -88,25 +92,28 @@ class ToastNotification(QWidget):
         layout.setContentsMargins(12, 4, 12, 4)
         layout.setSpacing(8)
 
+        from src.ui.theme import token
+        from src.utils.icon_provider import SvgIcons
+
         # Icon
-        icon = QLabel(self.TYPE_ICONS.get(ntype, "ℹ️"))
-        icon_font = QFont()
-        icon_font.setPointSize(12)
-        icon.setFont(icon_font)
+        icon = QLabel()
+        icon.setFixedSize(18, 18)
+        icon.setPixmap(SvgIcons.icon(self.TYPE_ICONS.get(ntype, "info"), self._accent, 18).pixmap(18, 18))
         layout.addWidget(icon)
 
         # Message
         msg = QLabel(message)
-        msg.setStyleSheet("color: white; font-size: 10pt;")
+        msg.setStyleSheet(f"color: {token('text')}; font-size: 10pt; background: transparent;")
         msg.setWordWrap(False)
         layout.addWidget(msg, stretch=1)
 
         # Close button
-        close_btn = QPushButton("✕")
+        close_btn = QPushButton()
+        close_btn.setIcon(SvgIcons.icon("close", token("text_muted"), 12))
         close_btn.setFixedSize(24, 24)
         close_btn.setStyleSheet(
-            "QPushButton { color: white; background: transparent; border: none; font-size: 12px; }"
-            "QPushButton:hover { background: rgba(255,255,255,0.2); border-radius: 12px; }"
+            "QPushButton { background: transparent; border: none; }"
+            f"QPushButton:hover {{ background: {token('bg_surface1')}; border-radius: 12px; }}"
         )
         close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         close_btn.clicked.connect(self.dismiss)
@@ -167,10 +174,11 @@ class NotificationManager:
         """Show a toast notification."""
         toast = ToastNotification(message, notification_type, duration_ms, self._parent)
 
-        # Position
-        x = (self._parent.width() - toast.width()) // 2
-        y = self._y_offset + len(self._active) * 56
-        toast.move(x, y)
+        # Position (bottom-right, stacked upwards)
+        toast.adjustSize()
+        x = self._parent.width() - toast.width() - 20
+        y = self._parent.height() - 60 - len(self._active) * 54
+        toast.move(max(10, x), max(10, y))
 
         toast.closed.connect(lambda t=toast: self._on_closed(t))
         self._active.append(toast)
@@ -198,6 +206,6 @@ class NotificationManager:
     def _reposition(self) -> None:
         """Reposition remaining notifications after one closes."""
         for i, toast in enumerate(self._active):
-            x = (self._parent.width() - toast.width()) // 2
-            y = self._y_offset + i * 56
-            toast.move(x, y)
+            x = self._parent.width() - toast.width() - 20
+            y = self._parent.height() - 60 - i * 54
+            toast.move(max(10, x), max(10, y))

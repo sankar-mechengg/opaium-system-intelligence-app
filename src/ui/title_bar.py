@@ -1,23 +1,28 @@
 """
 OP(AI)UM — Custom Title Bar
 
-Frameless window title bar with logo, app name, navigation
-tabs, and window controls (minimize, maximize, close).
-Supports window dragging.
+Title bar for the native frameless main window: logo, app name, navigation
+tabs (Dashboard, Explorer, AI Chat, History), lock + settings buttons and
+the window controls. Dragging, double-click maximize and Snap Layouts are
+handled natively via hit-testing (see native_window.py).
 """
 
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, Qt, Signal
-from PySide6.QtGui import QFont, QMouseEvent, QPixmap
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QWidget,
-)
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from src.config.constants import AppConstants
+from src.ui.native_window import HTCAPTION, HTCLIENT, HTCLOSE, HTMAXBUTTON, HTMINBUTTON
+from src.ui.widgets.icon_button import IconButton
+
+TABS: list[tuple[str, str, str]] = [
+    ("dashboard", "Dashboard", "dashboard"),
+    ("explorer", "Explorer", "explorer"),
+    ("chat", "AI Chat", "sparkle"),
+    ("history", "History", "history"),
+]
 
 
 class TitleBar(QWidget):
@@ -25,8 +30,9 @@ class TitleBar(QWidget):
     Custom title bar for the frameless main window.
 
     Signals:
-        tab_changed(str): Navigation tab clicked ('explorer', 'chat', 'history').
+        tab_changed(str): Navigation tab clicked ('dashboard', 'explorer', 'chat', 'history').
         settings_clicked(): Settings button clicked.
+        lock_clicked(): Lock button clicked.
         minimize_clicked(): Minimize window.
         maximize_clicked(): Maximize/restore window.
         close_clicked(): Close window.
@@ -34,152 +40,142 @@ class TitleBar(QWidget):
 
     tab_changed = Signal(str)
     settings_clicked = Signal()
+    lock_clicked = Signal()
     minimize_clicked = Signal()
     maximize_clicked = Signal()
     close_clicked = Signal()
 
-    TITLE_HEIGHT = 44
+    TITLE_HEIGHT = 46
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._drag_pos: QPoint | None = None
         self._current_tab = "explorer"
+        self._hovered_control: int = 0
 
         self.setObjectName("titleBar")
         self.setFixedHeight(self.TITLE_HEIGHT)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         self._build_ui()
 
     def _build_ui(self) -> None:
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 0, 4, 0)
+        layout.setContentsMargins(12, 0, 0, 0)
         layout.setSpacing(6)
 
         # Logo
-        logo_label = QLabel()
+        self._logo = QLabel()
+        self._logo.setObjectName("titleLogo")
         if AppConstants.LOGO_PATH.exists():
             pixmap = QPixmap(str(AppConstants.LOGO_PATH))
-            scaled = pixmap.scaled(
-                28,
-                28,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
+            self._logo.setPixmap(
+                pixmap.scaled(26, 26, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             )
-            logo_label.setPixmap(scaled)
-        logo_label.setFixedSize(32, 32)
-        layout.addWidget(logo_label)
+        self._logo.setFixedSize(30, 30)
+        layout.addWidget(self._logo)
 
         # App name
-        name = QLabel(AppConstants.APP_NAME)
-        name.setObjectName("titleAppName")
-        name_font = QFont()
-        name_font.setPointSize(11)
-        name_font.setBold(True)
-        name.setFont(name_font)
-        layout.addWidget(name)
+        self._name = QLabel(AppConstants.APP_NAME)
+        self._name.setObjectName("titleAppName")
+        layout.addWidget(self._name)
 
-        layout.addSpacing(20)
+        layout.addSpacing(18)
 
         # Navigation tabs
-        self._tab_buttons: dict[str, QPushButton] = {}
-
-        tabs = [
-            ("explorer", "Explorer"),
-            ("chat", "AI Chat"),
-            ("history", "History"),
-        ]
-
-        for tab_id, tab_label in tabs:
-            btn = QPushButton(tab_label)
-            btn.setObjectName("titleTab")
-            btn.setCheckable(True)
-            btn.setChecked(tab_id == "explorer")
+        self._tab_buttons: dict[str, IconButton] = {}
+        for tab_id, label, icon in TABS:
+            btn = IconButton(icon, label, role="text_muted", icon_size=16, object_name="titleTab", checkable=True)
+            btn.set_checked_role("accent")
             btn.setFixedHeight(32)
-            btn.setMinimumWidth(80)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            tab_font = QFont()
-            tab_font.setPointSize(9)
-            btn.setFont(tab_font)
-
-            tid = tab_id
-            btn.clicked.connect(lambda checked=False, t=tid: self._on_tab_clicked(t))
-
+            btn.setChecked(tab_id == self._current_tab)
+            btn.clicked.connect(lambda checked=False, t=tab_id: self._on_tab_clicked(t))
             self._tab_buttons[tab_id] = btn
             layout.addWidget(btn)
 
         layout.addStretch()
 
-        # Settings button
-        settings_btn = QPushButton("⚙")
-        settings_btn.setObjectName("titleSettingsBtn")
-        settings_btn.setFixedSize(36, 32)
-        settings_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        settings_btn.setToolTip("Settings")
-        settings_font = QFont()
-        settings_font.setPointSize(14)
-        settings_btn.setFont(settings_font)
-        settings_btn.clicked.connect(self.settings_clicked.emit)
-        layout.addWidget(settings_btn)
+        # Lock + settings
+        self._lock_btn = IconButton(
+            "lock", role="text_muted", icon_size=17, tooltip="Lock OP(AI)UM (Ctrl+L)", object_name="titleLockBtn"
+        )
+        self._lock_btn.setFixedSize(36, 32)
+        self._lock_btn.clicked.connect(self.lock_clicked.emit)
+        layout.addWidget(self._lock_btn)
 
-        layout.addSpacing(8)
+        self._settings_btn = IconButton(
+            "settings", role="text_muted", icon_size=17, tooltip="Settings (Ctrl+,)", object_name="titleSettingsBtn"
+        )
+        self._settings_btn.setFixedSize(36, 32)
+        self._settings_btn.clicked.connect(self.settings_clicked.emit)
+        layout.addWidget(self._settings_btn)
 
-        # Window controls
-        for symbol, obj_name, signal, tooltip in [
-            ("—", "titleMinBtn", self.minimize_clicked, "Minimize"),
-            ("☐", "titleMaxBtn", self.maximize_clicked, "Maximize"),
-            ("✕", "titleCloseBtn", self.close_clicked, "Close"),
-        ]:
-            btn = QPushButton(symbol)
-            btn.setObjectName(obj_name)
-            btn.setFixedSize(40, 32)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setToolTip(tooltip)
-            ctrl_font = QFont()
-            ctrl_font.setPointSize(11)
-            btn.setFont(ctrl_font)
-            btn.clicked.connect(signal.emit)
+        layout.addSpacing(10)
+
+        # Window controls — hover/press handled through native hit-testing
+        self._min_btn = IconButton(
+            "minimize", role="text_muted", icon_size=14, tooltip="Minimize", object_name="titleMinBtn"
+        )
+        self._max_btn = IconButton(
+            "maximize", role="text_muted", icon_size=13, tooltip="Maximize", object_name="titleMaxBtn"
+        )
+        self._close_btn = IconButton(
+            "close", role="text_muted", icon_size=14, tooltip="Close", object_name="titleCloseBtn"
+        )
+        for btn in (self._min_btn, self._max_btn, self._close_btn):
+            btn.setFixedSize(46, self.TITLE_HEIGHT)
+            btn.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             layout.addWidget(btn)
 
-            if obj_name == "titleMaxBtn":
-                self._max_btn = btn
+    # === Tabs ===
 
     def _on_tab_clicked(self, tab_id: str) -> None:
-        """Handle navigation tab click."""
-        if tab_id == self._current_tab:
-            return
-
-        self._current_tab = tab_id
-
+        if tab_id != self._current_tab:
+            self._current_tab = tab_id
+            self.tab_changed.emit(tab_id)
         for tid, btn in self._tab_buttons.items():
             btn.setChecked(tid == tab_id)
-
-        self.tab_changed.emit(tab_id)
 
     def set_active_tab(self, tab_id: str) -> None:
         """Programmatically set the active tab."""
         self._on_tab_clicked(tab_id)
 
+    @property
+    def current_tab(self) -> str:
+        return self._current_tab
+
+    def set_lock_visible(self, visible: bool) -> None:
+        self._lock_btn.setVisible(visible)
+
     def update_maximize_icon(self, is_maximized: bool) -> None:
         """Update the maximize button icon to reflect window state."""
-        self._max_btn.setText("❐" if is_maximized else "☐")
+        self._max_btn.set_icon_name("restore" if is_maximized else "maximize")
         self._max_btn.setToolTip("Restore" if is_maximized else "Maximize")
 
-    # === Window Dragging ===
+    # === Native hit-testing support ===
 
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_pos = event.globalPosition().toPoint() - self.window().pos()
-            event.accept()
+    def hit_test(self, pos: QPoint) -> int:
+        """Map a point (title-bar coordinates) to a Win32 HT* code."""
+        if not self.rect().contains(pos):
+            return HTCLIENT
+        for btn, code in ((self._min_btn, HTMINBUTTON), (self._max_btn, HTMAXBUTTON), (self._close_btn, HTCLOSE)):
+            if btn.isVisible() and btn.geometry().contains(pos):
+                return code
+        child = self.childAt(pos)
+        if child is None or child in (self._logo, self._name):
+            return HTCAPTION
+        return HTCLIENT
 
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if self._drag_pos and event.buttons() & Qt.MouseButton.LeftButton:
-            self.window().move(event.globalPosition().toPoint() - self._drag_pos)
-            event.accept()
-
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        self._drag_pos = None
-        event.accept()
-
-    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.maximize_clicked.emit()
+    def set_control_hover(self, code: int) -> None:
+        """Highlight the window control the cursor is over (0 = none)."""
+        if code == self._hovered_control:
+            return
+        self._hovered_control = code
+        for btn, c in ((self._min_btn, HTMINBUTTON), (self._max_btn, HTMAXBUTTON), (self._close_btn, HTCLOSE)):
+            hovered = code == c
+            if btn.property("hover") != hovered:
+                btn.setProperty("hover", hovered)
+                if c == HTCLOSE:
+                    btn.set_icon_name("close", "accent_text" if hovered else "text_muted")
+                btn.style().unpolish(btn)
+                btn.style().polish(btn)
+                btn.update()

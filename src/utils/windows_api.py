@@ -213,18 +213,27 @@ class WindowsAPI:
             return None
 
     @staticmethod
-    def add_to_startup(app_path: str) -> bool:
+    def add_to_startup(app_path: str, minimized: bool = True) -> bool:
         """
-        Add application to Windows startup via registry.
+        Add application to Windows startup via registry (HKCU Run key).
 
         Args:
-            app_path: Full path to the .exe file.
+            app_path: Full path to the .exe (or the entry script when not frozen).
+            minimized: Pass --minimized so the app starts in the tray.
 
         Returns:
             True if successful.
         """
         try:
+            import sys
             import winreg
+
+            if getattr(sys, "frozen", False):
+                command = f'"{app_path}"'
+            else:
+                command = f'"{sys.executable}" "{app_path}"'
+            if minimized:
+                command += " --minimized"
 
             key = winreg.OpenKey(
                 winreg.HKEY_CURRENT_USER,
@@ -232,7 +241,7 @@ class WindowsAPI:
                 0,
                 winreg.KEY_SET_VALUE,
             )
-            winreg.SetValueEx(key, "OPAIUM", 0, winreg.REG_SZ, f'"{app_path}"')
+            winreg.SetValueEx(key, "OPAIUM", 0, winreg.REG_SZ, command)
             winreg.CloseKey(key)
             logger.info(f"Added to Windows startup: {app_path}")
             return True

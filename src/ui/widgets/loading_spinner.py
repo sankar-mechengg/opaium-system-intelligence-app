@@ -21,12 +21,12 @@ class LoadingSpinner(QWidget):
         self,
         parent: QWidget | None = None,
         size: int = 32,
-        color: str = "#4FC3F7",
+        color: str | None = None,
         line_width: int = 3,
     ) -> None:
         super().__init__(parent)
         self._size = size
-        self._color = QColor(color)
+        self._color = QColor(color) if color else None
         self._line_width = line_width
         self._angle = 0
         self._is_spinning = False
@@ -68,11 +68,15 @@ class LoadingSpinner(QWidget):
         margin = self._line_width + 2
         rect = QRectF(margin, margin, side - 2 * margin, side - 2 * margin)
 
+        from src.ui.theme import token
+
+        color = self._color or QColor(token("accent"))
+
         # Create gradient for the arc
         gradient = QConicalGradient(rect.center(), -self._angle)
-        gradient.setColorAt(0, self._color)
-        gradient.setColorAt(0.6, self._color)
-        transparent = QColor(self._color)
+        gradient.setColorAt(0, color)
+        gradient.setColorAt(0.6, color)
+        transparent = QColor(color)
         transparent.setAlpha(0)
         gradient.setColorAt(1, transparent)
 
@@ -91,4 +95,4 @@ class LoadingSpinner(QWidget):
 
     def set_color(self, color: str) -> None:
         """Change the spinner color."""
-        self._color = QColor(color)
+        self._color = QColor(color) if color else None

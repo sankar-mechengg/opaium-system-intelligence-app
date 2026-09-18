@@ -34,17 +34,18 @@ class ToggleSwitch(QWidget):
         self,
         parent: QWidget | None = None,
         checked: bool = False,
-        bar_color_on: str = "#4FC3F7",
-        bar_color_off: str = "#B0BEC5",
-        handle_color: str = "#FFFFFF",
+        bar_color_on: str | None = None,
+        bar_color_off: str | None = None,
+        handle_color: str | None = None,
         width: int = 52,
         height: int = 28,
     ) -> None:
         super().__init__(parent)
         self._checked = checked
-        self._bar_color_on = QColor(bar_color_on)
-        self._bar_color_off = QColor(bar_color_off)
-        self._handle_color = QColor(handle_color)
+        # None = follow the active theme tokens at paint time
+        self._bar_color_on = QColor(bar_color_on) if bar_color_on else None
+        self._bar_color_off = QColor(bar_color_off) if bar_color_off else None
+        self._handle_color = QColor(handle_color) if handle_color else None
         self._width = width
         self._height = height
         self._handle_radius = (height - 6) // 2
@@ -99,8 +100,14 @@ class ToggleSwitch(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
+        from src.ui.theme import token
+
+        on_color = self._bar_color_on or QColor(token("accent"))
+        off_color = self._bar_color_off or QColor(token("bg_surface2"))
+        handle_color = self._handle_color or QColor(token("accent_text") if self._checked else token("text_sub"))
+
         # Draw bar
-        bar_color = self._bar_color_on if self._checked else self._bar_color_off
+        bar_color = on_color if self._checked else off_color
         bar_rect = QRectF(0, 0, self._width, self._height)
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QBrush(bar_color))
@@ -117,7 +124,7 @@ class ToggleSwitch(QWidget):
         painter.drawEllipse(QRectF(handle_x + 1, handle_y + 1, handle_diameter, handle_diameter))
 
         # Handle
-        painter.setBrush(QBrush(self._handle_color))
+        painter.setBrush(QBrush(handle_color))
         painter.drawEllipse(QRectF(handle_x, handle_y, handle_diameter, handle_diameter))
 
         painter.end()
