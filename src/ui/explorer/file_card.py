@@ -7,11 +7,8 @@ Shows file icon, name, size, and access time.
 
 from __future__ import annotations
 
-import contextlib
-import os
-
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QFont, QMouseEvent
+from PySide6.QtGui import QContextMenuEvent, QFont, QFontMetrics, QMouseEvent
 from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
 from src.config.constants import AppConstants
@@ -65,7 +62,7 @@ class FileCard(QFrame):
 
         from src.utils.icon_provider import IconProvider
 
-        provider = IconProvider()
+        provider = IconProvider.shared()
         icon = provider.get_file_icon(self._item.path)
         pixmap = icon.pixmap(QSize(40, 40))
         icon_label.setPixmap(pixmap)
@@ -82,18 +79,16 @@ class FileCard(QFrame):
             ext_label.setFont(ext_font)
             layout.addWidget(ext_label)
 
-        # File name (truncated)
-        name = self._item.name
-        if len(name) > 20:
-            name = name[:17] + "..."
-
-        name_label = QLabel(name)
+        # File name (elided to the card width)
+        name_label = QLabel()
         name_label.setObjectName("fileCardName")
         name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         name_label.setWordWrap(False)
         name_font = QFont()
         name_font.setPointSize(9)
         name_label.setFont(name_font)
+        metrics = QFontMetrics(name_font)
+        name_label.setText(metrics.elidedText(self._item.name, Qt.TextElideMode.ElideMiddle, self.width() - 24))
         name_label.setToolTip(self._item.name)
         layout.addWidget(name_label)
 
@@ -134,9 +129,12 @@ class FileCard(QFrame):
         elif event.button() == Qt.MouseButton.RightButton:
             self.context_menu_requested.emit(self._item, event.globalPosition().toPoint())
 
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        # The right-button press already opened our menu; stop the event from
+        # reaching the panel's background menu.
+        event.accept()
+
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        # Opening is handled by the explorer panel (single source of truth).
         if event.button() == Qt.MouseButton.LeftButton:
             self.double_clicked.emit(self._item)
-            if self._item.exists:
-                with contextlib.suppress(Exception):
-                    os.startfile(self._item.path)  # type: ignore[attr-defined]

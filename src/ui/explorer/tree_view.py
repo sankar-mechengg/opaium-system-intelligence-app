@@ -46,10 +46,12 @@ class FolderTreeView(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._icon_provider = IconProvider()
+        self._icon_provider = IconProvider.shared()
 
+        self.setObjectName("treePanel")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setMinimumWidth(AppConstants.TREE_PANEL_WIDTH)
-        self.setMaximumWidth(350)
+        self.setMaximumWidth(360)
 
         self._build_ui()
 
@@ -59,13 +61,13 @@ class FolderTreeView(QWidget):
         layout.setSpacing(4)
 
         # Header
-        header = QLabel("  Navigation")
+        header = QLabel("NAVIGATION")
         header.setObjectName("treeHeader")
         header_font = QFont()
-        header_font.setPointSize(10)
+        header_font.setPointSize(8)
         header_font.setBold(True)
         header.setFont(header_font)
-        header.setFixedHeight(32)
+        header.setFixedHeight(30)
         layout.addWidget(header)
 
         # Tree view
@@ -238,21 +240,69 @@ class FolderTreeView(QWidget):
                 quick_access.appendRow(item)
 
     def select_path(self, path: str) -> None:
-        """Programmatically select a path in the tree."""
-        # Simple linear search — works for shallow trees
+        """Programmatically select a path in the tree, expanding ancestors lazily."""
+        target = os.path.normcase(os.path.normpath(path))
+        # Already loaded?
         for i in range(self._model.rowCount()):
             root = self._model.item(i)
             if root:
-                result = self._find_path_item(root, path)
+                result = self._find_path_item(root, target)
                 if result:
-                    self._tree.setCurrentIndex(self._model.indexFromItem(result))
+                    self._reveal(result)
                     return
+        # Walk down from the closest loaded ancestor (drive or quick-access folder)
+        best: QStandardItem | None = None
+        best_len = -1
+        for i in range(self._model.rowCount()):
+            root = self._model.item(i)
+            if not root:
+                continue
+            for j in range(root.rowCount()):
+                child = root.child(j)
+                p = child.data(self.ROLE_PATH) if child else None
+                if not p:
+                    continue
+                norm = os.path.normcase(os.path.normpath(p))
+                if (target == norm or target.startswith(norm.rstrip("\\") + "\\")) and len(norm) > best_len:
+                    best, best_len = child, len(norm)
+        node = best
+        while node is not None:
+            node_path = os.path.normcase(os.path.normpath(node.data(self.ROLE_PATH)))
+            if node_path == target:
+                self._reveal(node)
+                return
+            self._tree.expand(self._model.indexFromItem(node))
+            self._on_expanded(self._model.indexFromItem(node))
+            next_node = None
+            for k in range(node.rowCount()):
+                child = node.child(k)
+                p = child.data(self.ROLE_PATH) if child else None
+                if p:
+                    norm = os.path.normcase(os.path.normpath(p))
+                    if target == norm or target.startswith(norm.rstrip("\\") + "\\"):
+                        next_node = child
+                        break
+            node = next_node
+
+    def _reveal(self, item: QStandardItem) -> None:
+        index = self._model.indexFromItem(item)
+        self._tree.blockSignals(True)
+        self._tree.setCurrentIndex(index)
+        self._tree.scrollTo(index)
+        self._tree.blockSignals(False)
+
+    def clear_selection(self) -> None:
+        self._tree.blockSignals(True)
+        self._tree.clearSelection()
+        self._tree.setCurrentIndex(QModelIndex())
+        self._tree.blockSignals(False)
 
     def _find_path_item(self, parent: QStandardItem, path: str) -> QStandardItem | None:
         """Recursively find an item by path."""
         for i in range(parent.rowCount()):
             child = parent.child(i)
-            if child and child.data(self.ROLE_PATH) == path:
+            child_path = child.data(self.ROLE_PATH) if child else None
+            if child_path and os.path.normcase(os.path.normpath(child_path)) == path:
                 return child
             if child and child.rowCount() > 0:
                 result = self._find_path_item(child, path)

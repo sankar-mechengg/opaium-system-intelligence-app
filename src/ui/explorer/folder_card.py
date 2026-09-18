@@ -8,11 +8,8 @@ Supports single-click (select/preview) and double-click (open in Explorer).
 
 from __future__ import annotations
 
-import contextlib
-import subprocess
-
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QFont, QMouseEvent
+from PySide6.QtGui import QContextMenuEvent, QFont, QFontMetrics, QMouseEvent
 from PySide6.QtWidgets import (
     QFrame,
     QLabel,
@@ -72,18 +69,14 @@ class FolderCard(QFrame):
         # Use Qt's built-in folder icon
         from src.utils.icon_provider import IconProvider
 
-        provider = IconProvider()
+        provider = IconProvider.shared()
         icon = provider.get_folder_icon(self._item.path if self._item.exists else None)
         pixmap = icon.pixmap(QSize(48, 48))
         icon_label.setPixmap(pixmap)
         layout.addWidget(icon_label)
 
-        # Folder name (truncated)
-        name = self._item.name
-        if len(name) > 18:
-            name = name[:16] + "..."
-
-        name_label = QLabel(name)
+        # Folder name (elided to the card width)
+        name_label = QLabel()
         name_label.setObjectName("folderCardName")
         name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         name_label.setWordWrap(False)
@@ -91,6 +84,8 @@ class FolderCard(QFrame):
         name_font.setPointSize(9)
         name_font.setBold(True)
         name_label.setFont(name_font)
+        metrics = QFontMetrics(name_font)
+        name_label.setText(metrics.elidedText(self._item.name, Qt.TextElideMode.ElideMiddle, self.width() - 24))
         name_label.setToolTip(self._item.name)
         layout.addWidget(name_label)
 
@@ -160,10 +155,12 @@ class FolderCard(QFrame):
         elif event.button() == Qt.MouseButton.RightButton:
             self.context_menu_requested.emit(self._item, event.globalPosition().toPoint())
 
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        # The right-button press already opened our menu; stop the event from
+        # reaching the panel's background menu.
+        event.accept()
+
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        # Navigation/opening is handled by the explorer panel (single source of truth).
         if event.button() == Qt.MouseButton.LeftButton:
             self.double_clicked.emit(self._item)
-            # Open in Windows Explorer
-            if self._item.exists:
-                with contextlib.suppress(Exception):
-                    subprocess.Popen(["explorer", self._item.path])
