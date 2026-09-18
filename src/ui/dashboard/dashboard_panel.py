@@ -14,12 +14,12 @@ from datetime import datetime
 
 from loguru import logger
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 
 from src.config.config_manager import ConfigManager
 from src.config.constants import AppConstants
 from src.core.recent_parser import RecentParser
-from src.core.system_stats import DashboardSnapshot, format_size, format_uptime, live_stats, snapshot
+from src.core.system_stats import DashboardSnapshot, folder_sizes, format_size, format_uptime, live_stats, snapshot
 from src.ui.dashboard.widgets import DashCard, ListRow, RingGauge, StatTile, UsageBar
 from src.ui.widgets.icon_button import IconButton
 from src.undo.undo_manager import UndoManager
@@ -72,7 +72,9 @@ class DashboardPanel(QWidget):
         self._dirty = True
         self._loading = False
         self._snapshot: DashboardSnapshot | None = None
+        self._folder_sizes_loaded = False
         self._load_token = 0
+        self._sizes_token = 0
 
         self._build_ui()
 
@@ -114,6 +116,7 @@ class DashboardPanel(QWidget):
 
         self._refresh_btn = IconButton("refresh", "Refresh", role="accent", icon_size=16, object_name="dashActionBtn")
         self._refresh_btn.setFixedHeight(34)
+        self._refresh_btn.setMinimumWidth(110)
         self._refresh_btn.clicked.connect(lambda: self.refresh(force=True))
         hero_layout.addWidget(self._refresh_btn, alignment=Qt.AlignmentFlag.AlignTop)
         layout.addWidget(hero)
@@ -160,6 +163,16 @@ class DashboardPanel(QWidget):
 
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
+        for card in (
+            self._system_card,
+            self._drives_card,
+            self._folders_card,
+            self._activity_card,
+            self._startup_card,
+            self._housekeeping_card,
+        ):
+            card.setMinimumWidth(320)
+            card.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         layout.addLayout(grid)
 
         # Quick AI actions
@@ -202,28 +215,66 @@ class DashboardPanel(QWidget):
         self._dirty = True
 
     def refresh(self, force: bool = False) -> None:
-        """Reload the heavier snapshot in the background (only when needed)."""
+        """
+        Reload the snapshot in the background (only when needed).
+
+        Two workers: a fast one (drives, startup, Recycle Bin, recent activity)
+        that fills the cards within a second, and a slow one that measures the
+        user folders and is cached for the session unless a refresh is forced.
+        """
         if self._loading or (not force and not self._dirty and self._snapshot is not None):
             return
         self._loading = True
         self._load_token += 1
         token = self._load_token
-        self._folders_card.set_subtitle("scanning…")
         self._greeting.setText(self._greeting_text())
 
-        worker = Worker(self._load_snapshot)
-        worker.signals.result.connect(lambda data, t=token: self._on_snapshot(t, data))
-        worker.signals.error.connect(lambda err: logger.error(f"Dashboard load error: {err}"))
+        # Bound-method receivers only: PySide6 drops cross-thread lambdas that capture a QObject.
+        worker = Worker(self._load_snapshot, token)
+        worker.signals.result.connect(self._on_snapshot_result)
         worker.signals.finished.connect(self._on_load_finished)
         ThreadPoolManager.run(worker)
 
-    def _load_snapshot(self) -> dict:  # type: ignore[type-arg]
-        snap = snapshot(include_folder_sizes=True)
-        recent = self._recent_parser.scan(include_files=True, include_folders=True)[:8]
-        stats = {}
-        with contextlib.suppress(Exception):
-            stats = self._undo.journal.get_stats()
-        return {"snapshot": snap, "recent": recent, "undo": stats}
+        if force or not self._folder_sizes_loaded:
+            self._sizes_token += 1
+            self._folders_card.set_subtitle("scanning…")
+            sizes_worker = Worker(self._load_folder_sizes, self._sizes_token)
+            sizes_worker.signals.result.connect(self._on_folder_sizes_result)
+            ThreadPoolManager.run(sizes_worker)
+
+    def _load_snapshot(self, token: int) -> dict:  # type: ignore[type-arg]
+        try:
+            snap = snapshot(include_folder_sizes=False)
+            recent = self._recent_parser.scan(include_files=True, include_folders=True, resolve_moved=False)[:8]
+            stats = {}
+            with contextlib.suppress(Exception):
+                stats = self._undo.journal.get_stats()
+            return {"token": token, "snapshot": snap, "recent": recent, "undo": stats}
+        except Exception as e:
+            logger.error(f"Dashboard load error: {e}")
+            return {"token": token, "error": str(e)}
+
+    def _load_folder_sizes(self, token: int) -> dict:  # type: ignore[type-arg]
+        try:
+            return {"token": token, "sizes": folder_sizes()}
+        except Exception as e:
+            logger.error(f"Folder size scan error: {e}")
+            return {"token": token, "error": str(e)}
+
+    def _on_snapshot_result(self, payload: object) -> None:
+        if not isinstance(payload, dict) or "error" in payload:
+            self._drives_card.set_subtitle("unavailable")
+            return
+        self._on_snapshot(int(payload.get("token", -1)), payload)
+
+    def _on_folder_sizes_result(self, payload: object) -> None:
+        if not isinstance(payload, dict) or int(payload.get("token", -1)) != self._sizes_token:
+            return
+        if "error" in payload:
+            self._folders_card.set_subtitle("unavailable")
+            return
+        self._folder_sizes_loaded = True
+        self._render_folder_sizes(list(payload.get("sizes") or []))
 
     def _on_load_finished(self) -> None:
         self._loading = False
@@ -264,19 +315,6 @@ class DashboardPanel(QWidget):
             bar.clicked.connect(lambda letter=d.letter: self.open_folder_requested.emit(f"{letter}:\\"))
             self._drives_card.body.addWidget(bar)
         self._drives_card.set_subtitle(f"{len(snap.drives)} drive{'s' if len(snap.drives) != 1 else ''}")
-
-        # Folder sizes
-        self._folders_card.clear_body()
-        total = sum(f.size_bytes for f in snap.folder_sizes) or 1
-        for f in snap.folder_sizes[:6]:
-            bar = UsageBar(
-                f.name, f"{format_size(f.size_bytes)}  ·  {f.file_count:,} files", f.size_bytes / total * 100
-            )
-            bar.clicked.connect(lambda p=f.path: self.open_folder_requested.emit(p))
-            self._folders_card.body.addWidget(bar)
-        if not snap.folder_sizes:
-            self._folders_card.body.addWidget(self._muted("No user folders found."))
-        self._folders_card.set_subtitle(f"{format_size(sum(f.size_bytes for f in snap.folder_sizes))} total")
 
         # Recent activity
         self._activity_card.clear_body()
@@ -354,6 +392,19 @@ class DashboardPanel(QWidget):
         actions.addStretch()
         self._housekeeping_card.body.addLayout(actions)
 
+    def _render_folder_sizes(self, sizes: list) -> None:  # type: ignore[type-arg]
+        self._folders_card.clear_body()
+        total = sum(f.size_bytes for f in sizes) or 1
+        for f in sizes[:6]:
+            bar = UsageBar(
+                f.name, f"{format_size(f.size_bytes)}  ·  {f.file_count:,} files", f.size_bytes / total * 100
+            )
+            bar.clicked.connect(lambda p=f.path: self.open_folder_requested.emit(p))
+            self._folders_card.body.addWidget(bar)
+        if not sizes:
+            self._folders_card.body.addWidget(self._muted("No user folders found."))
+        self._folders_card.set_subtitle(f"{format_size(sum(f.size_bytes for f in sizes))} total")
+
     @staticmethod
     def _muted(text: str) -> QLabel:
         label = QLabel(text)
@@ -372,11 +423,14 @@ class DashboardPanel(QWidget):
                 logger.error(f"Open failed: {e}")
 
     def _quick_action(self, template: str, key: str) -> None:
+        from src.utils.windows_api import known_user_folders
+
+        known = known_user_folders()
         profile = os.environ.get("USERPROFILE", "")
         folders = {
-            "downloads": os.path.join(profile, "Downloads"),
-            "documents": os.path.join(profile, "Documents"),
-            "desktop": os.path.join(profile, "Desktop"),
+            "downloads": known.get("Downloads") or os.path.join(profile, "Downloads"),
+            "documents": known.get("Documents") or os.path.join(profile, "Documents"),
+            "desktop": known.get("Desktop") or os.path.join(profile, "Desktop"),
         }
         question = template.format(**folders)
         self.ask_ai_requested.emit(question, folders.get(key, ""))

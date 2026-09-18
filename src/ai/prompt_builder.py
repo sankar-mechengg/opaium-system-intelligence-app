@@ -115,12 +115,16 @@ You help users understand and manage their files, folders, disks and startup pro
             f"- **Scan Mode**: {scan_mode}",
         ]
 
-        # Quick stats
+        # Quick stats (bounded so huge folders never stall the UI thread)
         try:
-            entries = list(os.scandir(folder_path))
+            import itertools
+
+            with os.scandir(folder_path) as it:
+                entries = list(itertools.islice(it, 5000))
             folders = sum(1 for e in entries if e.is_dir(follow_symlinks=False))
             files = sum(1 for e in entries if e.is_file(follow_symlinks=False))
-            lines.append(f"- **Direct Contents**: {folders} folders, {files} files")
+            more = "+" if len(entries) >= 5000 else ""
+            lines.append(f"- **Direct Contents**: {folders}{more} folders, {files}{more} files")
             names = sorted(e.name for e in entries)[:40]
             if names:
                 lines.append(f"- **First entries**: {', '.join(names)}")

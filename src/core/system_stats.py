@@ -72,39 +72,50 @@ def live_stats() -> LiveStats:
         return LiveStats(available=False)
 
 
-def folder_size(path: str, max_files: int = 400_000) -> FolderSize:
+def folder_size(path: str, max_files: int = 400_000, time_budget_s: float = 8.0) -> FolderSize:
+    """Sum file sizes under `path`, bounded by a file count and a time budget (partial results are fine)."""
+    import time
+
     total = 0
     count = 0
+    deadline = time.monotonic() + time_budget_s
     try:
-        for dirpath, dirnames, filenames in os.walk(path):
+        for dirpath, dirnames, _filenames in os.walk(path):
             # Skip reparse points / junctions to avoid loops
             dirnames[:] = [d for d in dirnames if not os.path.islink(os.path.join(dirpath, d))]
-            for f in filenames:
-                try:
-                    total += os.path.getsize(os.path.join(dirpath, f))
-                    count += 1
-                except OSError:
-                    continue
-                if count >= max_files:
-                    raise StopIteration
-    except StopIteration:
-        pass
+            try:
+                with os.scandir(dirpath) as it:
+                    for entry in it:
+                        if entry.is_file(follow_symlinks=False):
+                            try:
+                                total += entry.stat(follow_symlinks=False).st_size
+                                count += 1
+                            except OSError:
+                                continue
+            except OSError:
+                continue
+            if count >= max_files or time.monotonic() > deadline:
+                break
     except (OSError, PermissionError):
         pass
     return FolderSize(path=path, name=Path(path).name or path, size_bytes=total, file_count=count)
 
 
+def folder_sizes() -> list[FolderSize]:
+    """Sizes of the standard user folders, largest first (slow — run on a worker)."""
+    sizes = [folder_size(p) for p in user_folders()]
+    return sorted(sizes, key=lambda s: s.size_bytes, reverse=True)
+
+
 def user_folders() -> list[str]:
-    profile = os.environ.get("USERPROFILE", "")
-    if not profile:
-        return []
-    names = ["Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music"]
-    folders = [os.path.join(profile, n) for n in names]
-    # OneDrive redirection
+    """Standard user folders (shell-resolved, so OneDrive redirection is honoured) plus OneDrive itself."""
+    from src.utils.windows_api import known_user_folders
+
+    folders = list(known_user_folders().values())
     one_drive = os.environ.get("ONEDRIVE", "")
-    if one_drive and os.path.isdir(one_drive):
+    if one_drive and os.path.isdir(one_drive) and one_drive not in folders:
         folders.append(one_drive)
-    return [f for f in folders if os.path.isdir(f)]
+    return folders
 
 
 def snapshot(include_folder_sizes: bool = True) -> DashboardSnapshot:
@@ -127,8 +138,7 @@ def snapshot(include_folder_sizes: bool = True) -> DashboardSnapshot:
     except Exception:
         pass
     if include_folder_sizes:
-        sizes = [folder_size(p) for p in user_folders()]
-        snap.folder_sizes = sorted(sizes, key=lambda s: s.size_bytes, reverse=True)
+        snap.folder_sizes = folder_sizes()
     return snap
 
 

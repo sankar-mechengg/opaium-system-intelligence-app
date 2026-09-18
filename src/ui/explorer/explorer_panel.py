@@ -243,26 +243,62 @@ class ExplorerPanel(QWidget):
 
     # === Data loading ===
 
-    def refresh_data(self) -> None:
-        """Reload the current view in a background thread."""
+    def refresh_data(self, quick: bool | None = None) -> None:
+        """
+        Reload the current view in a background thread.
+
+        The Home view loads in two passes: a quick one (shortcuts whose target is
+        still where it was — a few hundred ms) followed by a full one that also
+        tracks down moved/renamed targets, which can take seconds.
+        """
         self._load_token += 1
         token = self._load_token
         self._toolbar.start_spinner()
-        path = self._current_path
+        if quick is None:
+            quick = not self._current_path
 
-        worker = Worker(self._load_data, path)
-        worker.signals.result.connect(lambda data, t=token: self._on_data_loaded(t, data))
-        worker.signals.error.connect(lambda err, t=token: self._on_data_error(t, err))
-        worker.signals.finished.connect(self._toolbar.stop_spinner)
+        # Worker signals cross threads. PySide6 only delivers those reliably to
+        # bound methods (lambdas capturing a QObject are dropped), so the token
+        # travels inside the payload instead of a closure.
+        worker = Worker(self._load_payload, token, self._current_path, quick)
+        worker.signals.result.connect(self._on_load_result)
         ThreadPoolManager.run(worker)
 
-    def _load_data(self, path: str) -> dict:  # type: ignore[type-arg]
+    def _load_payload(self, token: int, path: str, quick: bool) -> dict:  # type: ignore[type-arg]
+        try:
+            data = self._load_data(path, quick)
+            data["token"] = token
+            data["quick"] = quick
+            return data
+        except Exception as e:  # surfaced to the UI as an inline error state
+            logger.error(f"Explorer load failed for {path or 'Home'}: {e}")
+            return {"token": token, "error": str(e)}
+
+    def _on_load_result(self, payload: object) -> None:
+        if not isinstance(payload, dict):
+            return
+        if int(payload.get("token", -1)) != self._load_token:
+            return  # stale: the user navigated again meanwhile
+        if "error" in payload:
+            self._toolbar.stop_spinner()
+            self._on_data_error(str(payload["error"]))
+            return
+        self._on_data_loaded(payload)
+        if payload.get("quick") and not self._current_path:
+            # Second pass resolves moved/renamed shortcuts; keeps the spinner on.
+            self.refresh_data(quick=False)
+        else:
+            self._toolbar.stop_spinner()
+
+    def _load_data(self, path: str, quick: bool = False) -> dict:  # type: ignore[type-arg]
         show_hidden = self._config.settings.appearance.show_hidden_folders
         if path:
             items = DirectoryScanner.scan(path, show_hidden=show_hidden)
             return {"mode": "browse", "items": items}
 
-        grouped = self._recent_parser.get_grouped_items(include_files=True, include_folders=True)
+        grouped = self._recent_parser.get_grouped_items(
+            include_files=True, include_folders=True, resolve_moved=not quick
+        )
         for group in grouped:
             grouped[group] = [
                 item
@@ -281,9 +317,9 @@ class ExplorerPanel(QWidget):
                     )
         return {"mode": "home", "grouped": grouped}
 
-    def _on_data_loaded(self, token: int, data: object) -> None:
-        if token != self._load_token or not isinstance(data, dict):
-            return
+    def _on_data_loaded(self, data: dict) -> None:  # type: ignore[type-arg]
+        if self._selected_item is not None and not self._pending_select:
+            self._pending_select = self._selected_item.path  # keep selection across re-renders
         if data.get("mode") == "home":
             grouped: dict[TimeGroup, list[RecentItem]] = data["grouped"]
             self._items = [i for g in TimeUtils.group_order() for i in grouped.get(g, [])]
@@ -304,9 +340,7 @@ class ExplorerPanel(QWidget):
             self._card_grid.select_path(target)
             self._list_view.select_path(target)
 
-    def _on_data_error(self, token: int, error: str) -> None:
-        if token != self._load_token:
-            return
+    def _on_data_error(self, error: str) -> None:
         logger.error(f"Explorer load error: {error}")
         self._items = []
         self._home_grouped = None

@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 from src.config.constants import AppConstants
 from src.utils.icon_provider import IconProvider
 from src.utils.path_utils import PathUtils
+from src.utils.windows_api import known_user_folders
 
 
 class FolderTreeView(QWidget):
@@ -105,18 +106,9 @@ class FolderTreeView(QWidget):
         quick_access.setSelectable(False)
         self._model.appendRow(quick_access)
 
-        # Add common user folders
-        user_folders = {
-            "Desktop": os.path.expandvars("%USERPROFILE%\\Desktop"),
-            "Documents": os.path.expandvars("%USERPROFILE%\\Documents"),
-            "Downloads": os.path.expandvars("%USERPROFILE%\\Downloads"),
-            "Pictures": os.path.expandvars("%USERPROFILE%\\Pictures"),
-            "Videos": os.path.expandvars("%USERPROFILE%\\Videos"),
-            "Music": os.path.expandvars("%USERPROFILE%\\Music"),
-        }
-
-        for name, path in user_folders.items():
-            if os.path.exists(path):
+        # Common user folders via the shell (handles OneDrive-redirected Desktop/Documents/Pictures)
+        for name, path in known_user_folders().items():
+            if os.path.isdir(path):
                 item = self._create_folder_item(name, path)
                 quick_access.appendRow(item)
 

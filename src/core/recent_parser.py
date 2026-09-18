@@ -8,6 +8,7 @@ files and folders. Resolves shortcuts to their actual targets.
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -27,10 +28,18 @@ class RecentParser:
     files and folders with their timestamps.
     """
 
+    # Process-wide cache: (lnk path -> (lnk mtime, resolved item or None)).
+    # Resolving a shortcut whose target moved costs ~20 ms each; the explorer
+    # and dashboard both scan, and auto-refresh repeats it every few minutes.
+    _resolve_cache: dict[str, tuple[float, RecentItem | None]] = {}
+
     def __init__(self, tracking_db: Any | None = None) -> None:
         self._recent_dir = AppConstants.WINDOWS_RECENT_DIR
-        self._cache: dict[str, RecentItem] = {}
         self._tracking_db = tracking_db
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        cls._resolve_cache.clear()
 
     def scan(
         self,
@@ -38,6 +47,7 @@ class RecentParser:
         include_folders: bool = True,
         max_days: int = AppConstants.GROUP_MONTH_DAYS,
         filter_hidden: bool = True,
+        resolve_moved: bool = True,
     ) -> list[RecentItem]:
         """
         Scan the Windows Recent folder and return resolved items.
@@ -64,7 +74,7 @@ class RecentParser:
             logger.info(f"Found {len(lnk_files)} .lnk files in Recent folder.")
 
             for lnk_path in lnk_files:
-                item = self._parse_lnk(lnk_path, cutoff, filter_hidden)
+                item = self._parse_lnk(lnk_path, cutoff, filter_hidden, resolve_moved)
                 if item is None:
                     continue
 
@@ -103,6 +113,7 @@ class RecentParser:
         lnk_path: Path,
         cutoff_timestamp: float,
         filter_hidden: bool,
+        resolve_moved: bool = True,
     ) -> RecentItem | None:
         """
         Parse a single .lnk file and resolve its target.
@@ -126,12 +137,26 @@ class RecentParser:
 
             accessed_at = datetime.fromtimestamp(lnk_mtime)
 
+            cache_key = str(lnk_path)
+            cached = self._resolve_cache.get(cache_key)
+            if cached is not None and cached[0] == lnk_mtime:
+                cached_item = cached[1]
+                if cached_item is None:
+                    return None
+                if os.path.exists(cached_item.path):
+                    return cached_item.model_copy(update={"time_group": TimeUtils.get_time_group(accessed_at)})
+                # Target vanished since it was cached — fall through and re-resolve.
+
             # Resolve the shortcut target
-            target_path = WindowsAPI.resolve_lnk_target(lnk_path)
+            target_path = WindowsAPI.resolve_lnk_target(lnk_path, resolve_moved=resolve_moved)
             if target_path is None:
+                if not resolve_moved:
+                    return None  # quick pass: leave moved/broken links for the full pass
                 # Broken link - try to resolve using file ID from tracking DB
                 # This handles renamed/moved folders
-                return self._try_resolve_broken_link(lnk_path, accessed_at)
+                resolved = self._try_resolve_broken_link(lnk_path, accessed_at)
+                self._resolve_cache[cache_key] = (lnk_mtime, resolved)
+                return resolved
 
             target = Path(target_path)
 
@@ -169,7 +194,7 @@ class RecentParser:
 
             time_group = TimeUtils.get_time_group(accessed_at)
 
-            return RecentItem(
+            item = RecentItem(
                 path=str(target),
                 name=target.name,
                 item_type=item_type,
@@ -185,6 +210,8 @@ class RecentParser:
                 is_broken=False,
                 item_count=item_count,
             )
+            self._resolve_cache[cache_key] = (lnk_mtime, item)
+            return item
 
         except Exception as e:
             logger.debug(f"Failed to parse {lnk_path.name}: {e}")
@@ -350,14 +377,19 @@ class RecentParser:
         self,
         include_files: bool = True,
         include_folders: bool = True,
+        resolve_moved: bool = True,
     ) -> dict[TimeGroup, list[RecentItem]]:
         """
         Get recent items grouped by time period.
 
+        Args:
+            resolve_moved: False = quick pass that skips shortcuts whose stored
+                target no longer exists (the slow shell resolution).
+
         Returns:
             Dict mapping TimeGroup to list of RecentItems.
         """
-        items = self.scan(include_files=include_files, include_folders=include_folders)
+        items = self.scan(include_files=include_files, include_folders=include_folders, resolve_moved=resolve_moved)
 
         grouped: dict[TimeGroup, list[RecentItem]] = {
             TimeGroup.LAST_2_DAYS: [],

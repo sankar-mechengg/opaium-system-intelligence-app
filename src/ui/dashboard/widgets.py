@@ -47,6 +47,8 @@ class DashCard(QFrame):
         self.body.setContentsMargins(0, 0, 0, 0)
         self.body.setSpacing(8)
         outer.addLayout(self.body)
+        # Keep content top-aligned when a neighbouring card makes the grid row taller.
+        outer.addStretch(1)
 
     def set_subtitle(self, text: str) -> None:
         self._subtitle.setText(text)
@@ -139,11 +141,15 @@ class UsageBar(QWidget):
         row = QHBoxLayout()
         self._title = QLabel(title)
         self._title.setObjectName("dashListItemName")
-        row.addWidget(self._title)
-        row.addStretch()
+        self._title.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self._title.setMinimumWidth(80)
+        row.addWidget(self._title, stretch=1)
         self._detail = QLabel(detail)
         self._detail.setObjectName("dashListItemMeta")
-        row.addWidget(self._detail)
+        self._detail.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self._detail.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self._detail.setMinimumWidth(80)
+        row.addWidget(self._detail, stretch=2)
         layout.addLayout(row)
         self._bar = _Bar(self._percent)
         layout.addWidget(self._bar)
@@ -196,9 +202,12 @@ class StatTile(QWidget):
         layout.setSpacing(0)
         self._value = QLabel(value)
         self._value.setObjectName("dashValue")
+        self._value.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self._value.setMinimumWidth(60)
         layout.addWidget(self._value)
         self._label = QLabel(label)
         self._label.setObjectName("dashLabel")
+        self._label.setWordWrap(True)
         layout.addWidget(self._label)
 
     def set_value(self, value: str) -> None:
@@ -225,9 +234,12 @@ class ListRow(QFrame):
         layout.addWidget(icon_label)
         name_label = QLabel(name)
         name_label.setObjectName("dashListItemName")
+        name_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        name_label.setMinimumWidth(60)
         layout.addWidget(name_label, stretch=1)
         meta_label = QLabel(meta)
         meta_label.setObjectName("dashListItemMeta")
+        meta_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(meta_label)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:

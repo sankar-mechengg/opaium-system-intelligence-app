@@ -21,7 +21,7 @@ class WindowsAPI:
     """Windows-specific API wrappers."""
 
     @staticmethod
-    def resolve_lnk_target(lnk_path: str | Path) -> str | None:
+    def resolve_lnk_target(lnk_path: str | Path, resolve_moved: bool = True) -> str | None:
         """
         Resolve a .lnk shortcut file to its target path using COM Shell API.
 
@@ -38,7 +38,7 @@ class WindowsAPI:
         """
         try:
             import pythoncom
-            from win32com.shell import shell, shellcon
+            from win32com.shell import shell
 
             pythoncom.CoInitialize()
             try:
@@ -52,9 +52,20 @@ class WindowsAPI:
                 persist_file = shortcut.QueryInterface(pythoncom.IID_IPersistFile)
                 persist_file.Load(str(lnk_path), 0)
 
-                # SLR_UPDATE: Update the link if target has moved
-                # SLR_NO_UI: Don't show dialog if target not found
-                shortcut.Resolve(0, shellcon.SLR_UPDATE | shellcon.SLR_NO_UI)
+                # Fast path: the stored target usually still exists — no Resolve needed.
+                target_path, _ = shortcut.GetPath(shell.SLGP_RAWPATH)
+                if target_path and os.path.exists(str(target_path)):
+                    return cast(str, target_path)
+                if not resolve_moved:
+                    return None
+
+                # Slow path (target moved/renamed): let the shell track it down.
+                # pywin32's shellcon does not export SLR_* flags; SDK values are used.
+                # SLR_NO_UI (0x1): never show a dialog; high word = timeout in ms.
+                SLR_NO_UI = 0x0001
+                timeout_ms = 200
+                with contextlib.suppress(Exception):
+                    shortcut.Resolve(0, SLR_NO_UI | (timeout_ms << 16))
 
                 target_path, _ = shortcut.GetPath(shell.SLGP_RAWPATH)
 
@@ -299,3 +310,60 @@ class WindowsAPI:
             return total, used, free
         except Exception:
             return 0, 0, 0
+
+
+# === Known folders ===
+
+# FOLDERID GUIDs (KnownFolders.h) — resolved through the shell so OneDrive /
+# policy redirection of Desktop, Documents and Pictures is honoured.
+_KNOWN_FOLDER_IDS: dict[str, str] = {
+    "Desktop": "{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}",
+    "Documents": "{FDD39AD0-238F-46AF-ADB4-6C85480369C7}",
+    "Downloads": "{374DE290-123F-4565-9164-39C4925E467B}",
+    "Pictures": "{33E28130-4E1E-4676-835A-98395C3BC3BB}",
+    "Videos": "{18989B1D-99B5-455B-841C-AB7C74E4DDFC}",
+    "Music": "{4BD8D571-6D19-48D3-BE97-422220080E43}",
+}
+
+
+def known_folder_path(folder_id: str) -> str | None:
+    """Resolve a FOLDERID GUID with SHGetKnownFolderPath. Returns None when unavailable."""
+    try:
+        import ctypes.wintypes as wt
+        import uuid
+
+        class GUID(ctypes.Structure):
+            _fields_ = [
+                ("Data1", wt.DWORD),
+                ("Data2", wt.WORD),
+                ("Data3", wt.WORD),
+                ("Data4", ctypes.c_ubyte * 8),
+            ]
+
+        u = uuid.UUID(folder_id)
+        guid = GUID()
+        guid.Data1, guid.Data2, guid.Data3 = u.time_low, u.time_mid, u.time_hi_version
+        for i, b in enumerate(u.bytes[8:]):
+            guid.Data4[i] = b
+
+        path_ptr = ctypes.c_wchar_p()
+        shell32 = ctypes.windll.shell32
+        if shell32.SHGetKnownFolderPath(ctypes.byref(guid), 0, None, ctypes.byref(path_ptr)) != 0:
+            return None
+        try:
+            return path_ptr.value
+        finally:
+            ctypes.windll.ole32.CoTaskMemFree(path_ptr)
+    except Exception:
+        return None
+
+
+def known_user_folders() -> dict[str, str]:
+    """Name -> path for the standard user folders that exist, in display order."""
+    result: dict[str, str] = {}
+    profile = os.environ.get("USERPROFILE", "")
+    for name, folder_id in _KNOWN_FOLDER_IDS.items():
+        path = known_folder_path(folder_id) or (os.path.join(profile, name) if profile else "")
+        if path and os.path.isdir(path):
+            result[name] = path
+    return result
