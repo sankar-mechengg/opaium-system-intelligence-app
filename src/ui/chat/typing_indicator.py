@@ -15,9 +15,9 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 class TypingDot(QWidget):
     """A single animated dot."""
 
-    def __init__(self, color: str = "#4FC3F7", parent: QWidget | None = None) -> None:
+    def __init__(self, color: str | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._color = QColor(color)
+        self._color = QColor(color) if color else None
         self._opacity = 0.3
         self.setFixedSize(8, 8)
 
@@ -26,9 +26,11 @@ class TypingDot(QWidget):
         self.update()
 
     def paintEvent(self, event: QPaintEvent) -> None:
+        from src.ui.theme import token
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        color = QColor(self._color)
+        color = QColor(self._color or QColor(token("accent")))
         color.setAlphaF(self._opacity)
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QBrush(color))

@@ -8,14 +8,14 @@ for common file operations.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
-    QPushButton,
     QScrollArea,
     QWidget,
 )
+
+from src.ui.widgets.icon_button import IconButton
 
 
 class QuickActionChips(QWidget):
@@ -29,16 +29,16 @@ class QuickActionChips(QWidget):
     chip_clicked = Signal(str)
 
     DEFAULT_ACTIONS = [
-        ("📊 Count files", "Count the files in {folder}"),
-        ("🔍 Find duplicates", "Find duplicate files in {folder}"),
-        ("📁 Organize by type", "Organize files in {folder} by type"),
-        ("📅 Organize by date", "Organize files in {folder} by date"),
-        ("🗑️ Clean empties", "Find empty folders in {folder}"),
-        ("📏 Folder size", "What's the size of {folder}?"),
-        ("📋 File types", "Show file type breakdown for {folder}"),
-        ("🔄 Find large files", "Find large files in {folder}"),
-        ("💾 Disk usage", "Show disk usage info"),
-        ("🚀 Startup programs", "List my startup programs"),
+        ("chart", "Count files", "Count the files in {folder}"),
+        ("duplicate", "Find duplicates", "Find duplicate files in {folder}"),
+        ("folder-open", "Organize by type", "Organize the files in {folder} into folders by type"),
+        ("clock", "Organize by date", "Organize the files in {folder} into folders by date"),
+        ("broom", "Clean empties", "Find empty folders in {folder}"),
+        ("chart", "Folder size", "What's the size of {folder} and what takes the most space?"),
+        ("filter", "File types", "Show a file type breakdown for {folder}"),
+        ("search", "Large files", "Find the largest files in {folder}"),
+        ("disk", "Disk usage", "Show disk usage for all my drives"),
+        ("rocket", "Startup programs", "List my Windows startup programs"),
     ]
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -58,21 +58,16 @@ class QuickActionChips(QWidget):
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setFixedHeight(40)
+        scroll.setFixedHeight(38)
 
         container = QWidget()
         self._chip_layout = QHBoxLayout(container)
         self._chip_layout.setContentsMargins(0, 0, 0, 0)
         self._chip_layout.setSpacing(6)
 
-        for label, template in self.DEFAULT_ACTIONS:
-            chip = QPushButton(label)
-            chip.setObjectName("actionChip")
-            chip.setCursor(Qt.CursorShape.PointingHandCursor)
-            chip.setFixedHeight(30)
-            chip_font = QFont()
-            chip_font.setPointSize(8)
-            chip.setFont(chip_font)
+        for icon, label, template in self.DEFAULT_ACTIONS:
+            chip = IconButton(icon, label, role="text_sub", icon_size=13, object_name="actionChip")
+            chip.setFixedHeight(28)
 
             t = template
             chip.clicked.connect(lambda checked=False, tmpl=t: self._on_chip_clicked(tmpl))

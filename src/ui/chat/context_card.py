@@ -3,7 +3,7 @@ OP(AI)UM — Chat Context Card
 
 A compact inline card shown in the chat when user asks AI
 about a specific file or folder from the context menu.
-Supports right-click context menu (all card options except Ask AI).
+Supports a right-click context menu (open, reveal, copy, properties).
 """
 
 from __future__ import annotations
@@ -64,7 +64,7 @@ class ChatContextCard(QFrame):
         try:
             from src.utils.icon_provider import IconProvider
 
-            provider = IconProvider()
+            provider = IconProvider.shared()
             if is_folder:
                 icon = provider.get_folder_icon(self._path)
             else:
@@ -143,9 +143,6 @@ class ChatContextCard(QFrame):
         menu.addAction("Copy Name", lambda: self._copy_to_clipboard(name))
         menu.addSeparator()
 
-        if not is_folder:
-            menu.addAction("Delete", lambda: self._delete_file())
-
         menu.addAction("Properties", lambda: self._show_properties())
         menu.exec(self.mapToGlobal(pos))
 
@@ -154,19 +151,6 @@ class ChatContextCard(QFrame):
         clipboard = QApplication.clipboard()
         if clipboard:
             clipboard.setText(text)
-
-    def _delete_file(self) -> None:
-        try:
-            from send2trash import send2trash
-
-            send2trash(self._path)
-        except Exception:
-            import shutil
-
-            if Path(self._path).is_dir():
-                shutil.rmtree(self._path)
-            else:
-                os.remove(self._path)
 
     def _show_properties(self) -> None:
         try:
