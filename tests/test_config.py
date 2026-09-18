@@ -49,10 +49,12 @@ class TestCryptoManager:
 class TestDefaultConfig:
     def test_default_settings(self):
         settings = DefaultConfig()
-        assert settings.appearance.theme == ThemeMode.LIGHT
+        assert settings.appearance.theme == ThemeMode.SYSTEM
         assert settings.ai.ai_model == AppConstants.DEFAULT_AI_MODEL
         assert settings.refresh.auto_refresh_enabled is True
         assert settings.undo.max_operations == 10000
+        assert settings.startup.start_with_windows is False
+        assert settings.ai.confirm_destructive is True
 
     def test_password_type_enum(self):
         assert PasswordType.PIN.value == "pin"

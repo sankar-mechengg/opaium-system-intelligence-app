@@ -174,3 +174,36 @@ class TestConversationManager:
             conv.add_user_message(f"Message {i} " * 50)
         messages = conv.get_api_messages()
         assert len(messages) < 55
+
+    def test_transcript_keeps_tool_pairs_and_trims_on_user_boundary(self):
+        conv = ConversationManager(max_history=6)
+        conv.set_system_prompt("s")
+        conv.add_user_message("count")
+        conv.add_transcript(
+            [
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {"id": "c1", "type": "function", "function": {"name": "count_files", "arguments": "{}"}}
+                    ],
+                },
+                {"role": "tool", "tool_call_id": "c1", "content": "{}"},
+                {"role": "assistant", "content": "5 files"},
+            ]
+        )
+        roles = [m["role"] for m in conv.get_api_messages()]
+        assert roles == ["system", "user", "assistant", "tool", "assistant"]
+
+        for i in range(4):
+            conv.add_user_message(f"q{i}")
+            conv.add_assistant_message(f"a{i}")
+        roles = [m["role"] for m in conv.get_api_messages()]
+        assert roles[1] == "user"  # never starts with an orphaned tool result
+        assert "tool" not in roles
+
+    def test_drop_trailing_user_message(self):
+        conv = ConversationManager()
+        conv.add_user_message("hello")
+        conv.drop_trailing_user_message()
+        assert conv.message_count == 0
