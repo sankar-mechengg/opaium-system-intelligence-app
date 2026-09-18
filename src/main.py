@@ -2,32 +2,85 @@
 OP(AI)UM — Application Entry Point
 
 Launches the OP(AI)UM System Intelligence Tool.
-Handles platform checks, logging setup, config loading,
-authentication, and main window initialization.
+Handles platform checks, logging, config loading, single-instance
+enforcement, crash reporting and main window initialization.
+
+Command line:
+    --minimized     start hidden in the tray (used by "Start with Windows")
+    --log-level X   DEBUG / INFO / WARNING / ERROR
 """
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
+import traceback
+from types import TracebackType
+
+
+def _parse_args(argv: list[str]) -> dict[str, object]:
+    opts: dict[str, object] = {"minimized": False, "log_level": os.environ.get("OPAIUM_LOG_LEVEL", "INFO")}
+    it = iter(argv)
+    for arg in it:
+        if arg == "--minimized":
+            opts["minimized"] = True
+        elif arg == "--log-level":
+            opts["log_level"] = next(it, "INFO")
+    return opts
+
+
+def _install_crash_handler() -> None:
+    """Log uncaught exceptions and show a friendly dialog instead of dying silently."""
+    from loguru import logger
+
+    def handle(exc_type: type[BaseException], exc: BaseException, tb: TracebackType | None) -> None:
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc, tb)
+            return
+        text = "".join(traceback.format_exception(exc_type, exc, tb))
+        logger.critical(f"Unhandled exception:\n{text}")
+        try:
+            from PySide6.QtWidgets import QApplication, QMessageBox
+
+            from src.config.constants import AppConstants
+
+            if QApplication.instance() is not None:
+                QMessageBox.critical(
+                    None,
+                    "OP(AI)UM ran into a problem",
+                    f"{exc_type.__name__}: {exc}\n\nDetails were written to:\n{AppConstants.LOG_DIR}",
+                )
+        except Exception:
+            pass
+
+    sys.excepthook = handle
 
 
 def main() -> int:
-    """
-    Main entry point for OP(AI)UM.
-
-    Returns:
-        Exit code (0 for success).
-    """
-    # Ensure we're on Windows
+    """Main entry point for OP(AI)UM. Returns the exit code."""
     if sys.platform != "win32":
         print("ERROR: OP(AI)UM is designed for Windows only.")
         return 1
 
-    # Set high DPI attributes before QApplication is created
-    os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
+    opts = _parse_args(sys.argv[1:])
 
-    from PySide6.QtGui import QIcon
+    # Development convenience: load .env from the project root (never in frozen builds)
+    if not getattr(sys, "frozen", False):
+        try:
+            from dotenv import load_dotenv
+
+            load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+            opts["log_level"] = os.environ.get("OPAIUM_LOG_LEVEL", str(opts["log_level"]))
+        except Exception:
+            pass
+
+    # High-DPI: let Qt scale crisply on mixed-DPI setups
+    os.environ.setdefault("QT_ENABLE_HIGHDPI_SCALING", "1")
+    os.environ.setdefault("QT_SCALE_FACTOR_ROUNDING_POLICY", "PassThrough")
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QGuiApplication, QIcon
     from PySide6.QtWidgets import QApplication
 
     from src.config.config_manager import ConfigManager
@@ -35,14 +88,13 @@ def main() -> int:
     from src.utils.logger import setup_logger
     from src.utils.platform_check import check_platform
 
-    # Initialize logging first
-    setup_logger("INFO")
+    setup_logger(str(opts["log_level"]))
+    _install_crash_handler()
 
     from loguru import logger
 
     logger.info(f"Starting {AppConstants.APP_NAME} v{AppConstants.APP_VERSION}")
 
-    # Platform compatibility check
     platform_info = check_platform()
     if not platform_info.is_compatible:
         for issue in platform_info.issues:
@@ -50,50 +102,42 @@ def main() -> int:
         print(f"Platform check failed: {'; '.join(platform_info.issues)}")
         return 1
 
-    # Ensure app directories exist
     AppConstants.ensure_dirs()
 
-    # Load configuration
     config = ConfigManager()
     config.load()
-
-    # Update log level from config if needed
     logger.info("Configuration loaded.")
 
-    # Create Qt Application
+    QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QApplication(sys.argv)
     app.setApplicationName(AppConstants.APP_NAME)
+    app.setApplicationDisplayName(AppConstants.APP_NAME)
     app.setOrganizationName(AppConstants.APP_ORG)
     app.setApplicationVersion(AppConstants.APP_VERSION)
+    app.setStyle("Fusion")  # consistent base for the QSS design system
+    app.setQuitOnLastWindowClosed(False)  # tray keeps us alive
 
-    # Set application icon (for window and taskbar)
-    icon = None
-    # Try .ico first (better for Windows taskbar)
-    if AppConstants.LOGO_ICO_PATH.exists():
-        icon = QIcon(str(AppConstants.LOGO_ICO_PATH))
-    elif AppConstants.LOGO_PATH.exists():
-        icon = QIcon(str(AppConstants.LOGO_PATH))
+    icon_path = AppConstants.LOGO_ICO_PATH if AppConstants.LOGO_ICO_PATH.exists() else AppConstants.LOGO_PATH
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
 
-    if icon:
-        app.setWindowIcon(icon)
+    # Windows taskbar grouping / icon
+    try:
+        import ctypes
 
-    # Set Windows taskbar icon explicitly
-    if sys.platform == "win32":
-        try:
-            import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            f"{AppConstants.APP_ORG}.OPAIUM.{AppConstants.APP_VERSION}"
+        )
+    except Exception as e:
+        logger.debug(f"Could not set Windows App ID: {e}")
 
-            # Set app user model ID for Windows taskbar
-            myappid = f"{AppConstants.APP_ORG}.{AppConstants.APP_NAME}.{AppConstants.APP_VERSION}"
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        except Exception as e:
-            logger.debug(f"Could not set Windows App ID: {e}")
-
-    # Prevent multiple instances — if already running, ask the first instance to show itself
+    # Single instance — hand off to the running copy
     from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
+    server_name = "OPAIUM-single-instance"
     socket = QLocalSocket()
-    socket.connectToServer(AppConstants.APP_NAME)
-    if socket.waitForConnected(500):
+    socket.connectToServer(server_name)
+    if socket.waitForConnected(400):
         logger.warning("Another instance is already running. Signalling it to show.")
         socket.write(b"show")
         socket.waitForBytesWritten(1000)
@@ -102,21 +146,19 @@ def main() -> int:
     socket.close()
 
     server = QLocalServer()
-    server.removeServer(AppConstants.APP_NAME)
-    server.listen(AppConstants.APP_NAME)
+    QLocalServer.removeServer(server_name)
+    if not server.listen(server_name):
+        logger.warning(f"Single-instance server could not start: {server.errorString()}")
 
-    # Import the main app controller (deferred to avoid circular imports)
     from src.app import OpAIUMApp
 
-    # Create and run the application
-    opaium_app = OpAIUMApp(app, config)
+    opaium_app = OpAIUMApp(app, config, start_minimized=bool(opts["minimized"]))
     opaium_app.initialize()
 
-    # When another instance connects, bring the existing window to front
     def _on_new_connection() -> None:
         client = server.nextPendingConnection()
         if client:
-            client.waitForReadyRead(1000)
+            client.waitForReadyRead(500)
             opaium_app.raise_window()
             client.close()
 
@@ -124,11 +166,10 @@ def main() -> int:
 
     exit_code = app.exec()
 
-    # Cleanup
     server.close()
-    config.auto_save_if_dirty()
+    with contextlib.suppress(Exception):
+        config.auto_save_if_dirty()
     logger.info(f"OP(AI)UM exiting with code {exit_code}")
-
     return exit_code
 
 

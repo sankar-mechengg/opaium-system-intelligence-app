@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from src.core.models import OperationRecord
 from src.ui.history.history_row import HistoryRow
+from src.ui.widgets.icon_button import IconButton
 from src.undo.operation_models import Operation
 from src.undo.undo_manager import UndoManager
 
@@ -37,7 +38,7 @@ class HistoryPanel(QWidget):
     """
 
     undo_requested = Signal(int)
-    operation_undone = Signal()
+    operation_undone = Signal(str)
 
     def __init__(
         self,
@@ -64,10 +65,14 @@ class HistoryPanel(QWidget):
         title = QLabel("Operation History")
         title.setObjectName("historyTitle")
         title_font = QFont()
-        title_font.setPointSize(10)
+        title_font.setPointSize(12)
         title_font.setBold(True)
         title.setFont(title_font)
         header_layout.addWidget(title)
+
+        subtitle = QLabel("Every AI and Explorer change, newest first. Undo what you can, prune what you do not need.")
+        subtitle.setObjectName("historyMeta")
+        header_layout.addWidget(subtitle)
 
         header_layout.addStretch()
 
@@ -78,10 +83,8 @@ class HistoryPanel(QWidget):
         self._count_label.setFont(count_font)
         header_layout.addWidget(self._count_label)
 
-        refresh_btn = QPushButton("Refresh")
-        refresh_btn.setObjectName("historyRefreshBtn")
+        refresh_btn = IconButton("refresh", "Refresh", role="text_sub", icon_size=14, object_name="historyRefreshBtn")
         refresh_btn.setFixedHeight(28)
-        refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         refresh_btn.clicked.connect(self.refresh)
         header_layout.addWidget(refresh_btn)
 
@@ -162,21 +165,24 @@ class HistoryPanel(QWidget):
             new_names=[m.new_name for m in op.file_mappings],
             is_undone=op.is_undone,
             is_undoable=op.is_undoable,
+            metadata=op.metadata or {},
         )
 
     def _on_undo_requested(self, operation_id: int) -> None:
         """Handle undo request."""
-        operation = self._undo_manager._journal.get_operation(operation_id)
+        operation = self._undo_manager.get_operation(operation_id)
         if operation is None:
             logger.warning(f"Operation {operation_id} not found.")
             return
         success, message = self._undo_manager.undo_operation(operation)
         if success:
             logger.info(f"Operation {operation_id} undone: {message}")
-            self.operation_undone.emit()
+            self.operation_undone.emit(message)
             self.refresh()
         else:
             logger.warning(f"Failed to undo operation {operation_id}: {message}")
+            QMessageBox.warning(self, "Cannot undo", message)
+            self.refresh()
 
     def _on_delete_entry(self, operation_id: int) -> None:
         """Delete a single history entry after confirmation."""
@@ -188,7 +194,7 @@ class HistoryPanel(QWidget):
             QMessageBox.StandardButton.No,
         )
         if reply == QMessageBox.StandardButton.Yes:
-            self._undo_manager._journal.delete_operation(operation_id)
+            self._undo_manager.journal.delete_operation(operation_id)
             logger.info(f"Deleted history entry #{operation_id}")
             self.refresh()
 
@@ -202,7 +208,7 @@ class HistoryPanel(QWidget):
             QMessageBox.StandardButton.No,
         )
         if reply == QMessageBox.StandardButton.Yes:
-            count = self._undo_manager._journal.clear_all()
+            count = self._undo_manager.journal.clear_all()
             logger.info(f"Cleared {count} history entries")
             self.refresh()
 
