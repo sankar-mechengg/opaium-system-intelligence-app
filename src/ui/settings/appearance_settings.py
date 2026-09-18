@@ -7,7 +7,7 @@ card sizing.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QSpinBox, QVBoxLayout, QWidget
 
 from src.config.config_manager import ConfigManager, enum_value
@@ -43,6 +43,8 @@ class AppearanceSettings(QWidget):
         theme_group = QGroupBox("Theme")
         theme_group.setObjectName("settingsGroup")
         theme_layout = QFormLayout(theme_group)
+        theme_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        theme_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         self._theme_combo = QComboBox()
         for label, key in THEMES:
@@ -52,11 +54,12 @@ class AppearanceSettings(QWidget):
 
         note = QLabel("Changes preview instantly and are kept when you press Save.")
         note.setObjectName("settingsNote")
+
+        note.setWordWrap(True)
         theme_layout.addRow(note)
 
         anim_row = QHBoxLayout()
-        anim_row.addWidget(QLabel("Animations and transitions"))
-        anim_row.addStretch()
+        anim_row.addWidget(QLabel("Animations and transitions"), stretch=1)
         self._anim_toggle = ToggleSwitch(checked=True)
         anim_row.addWidget(self._anim_toggle)
         theme_layout.addRow(anim_row)
@@ -65,6 +68,8 @@ class AppearanceSettings(QWidget):
         explorer_group = QGroupBox("Explorer")
         explorer_group.setObjectName("settingsGroup")
         explorer_form = QFormLayout(explorer_group)
+        explorer_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        explorer_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         self._view_combo = QComboBox()
         self._view_combo.addItem("Grid of cards", "grid")
@@ -87,15 +92,13 @@ class AppearanceSettings(QWidget):
         explorer_form.addRow("Card height:", self._card_height)
 
         folders_row = QHBoxLayout()
-        folders_row.addWidget(QLabel("Show folders before files"))
-        folders_row.addStretch()
+        folders_row.addWidget(QLabel("Show folders before files"), stretch=1)
         self._folders_first = ToggleSwitch(checked=True)
         folders_row.addWidget(self._folders_first)
         explorer_form.addRow(folders_row)
 
         hidden_row = QHBoxLayout()
-        hidden_row.addWidget(QLabel("Show hidden and system items"))
-        hidden_row.addStretch()
+        hidden_row.addWidget(QLabel("Show hidden and system items"), stretch=1)
         self._hidden_toggle = ToggleSwitch(checked=False)
         hidden_row.addWidget(self._hidden_toggle)
         explorer_form.addRow(hidden_row)

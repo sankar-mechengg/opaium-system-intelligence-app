@@ -10,7 +10,18 @@ from __future__ import annotations
 from loguru import logger
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.config.config_manager import ConfigManager
 from src.config.constants import AppConstants
@@ -31,6 +42,7 @@ class SettingsDialog(QDialog):
 
     settings_saved = Signal()
     api_key_changed = Signal()
+    auth_changed = Signal()
     check_updates_requested = Signal()
     wipe_requested = Signal()
 
@@ -40,8 +52,8 @@ class SettingsDialog(QDialog):
         self._saved = False
 
         self.setWindowTitle(f"{AppConstants.APP_NAME} — Settings")
-        self.setMinimumSize(640, 620)
-        self.resize(700, 700)
+        self.setMinimumSize(660, 560)
+        self.resize(760, 780)
         self.setModal(True)
 
         self._build_ui()
@@ -56,16 +68,16 @@ class SettingsDialog(QDialog):
         self._tabs.setObjectName("settingsTabs")
 
         self._appearance = AppearanceSettings(self._config)
-        self._tabs.addTab(self._appearance, "Appearance")
+        self._tabs.addTab(self._scrollable(self._appearance), "Appearance")
 
         self._general = GeneralSettings(self._config)
-        self._tabs.addTab(self._general, "General")
+        self._tabs.addTab(self._scrollable(self._general), "General")
 
         self._ai = AISettings(self._config)
-        self._tabs.addTab(self._ai, "AI")
+        self._tabs.addTab(self._scrollable(self._ai), "AI")
 
         self._security = SecuritySettings(self._config)
-        self._tabs.addTab(self._security, "Security")
+        self._tabs.addTab(self._scrollable(self._security), "Security")
 
         layout.addWidget(self._tabs, stretch=1)
 
@@ -95,9 +107,20 @@ class SettingsDialog(QDialog):
 
         layout.addLayout(footer)
 
+    @staticmethod
+    def _scrollable(page: QWidget) -> QScrollArea:
+        """Pages keep their natural height and scroll instead of squeezing rows together."""
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setFrameShape(QFrame.Shape.NoFrame)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        area.setWidget(page)
+        return area
+
     def _connect_signals(self) -> None:
         self._ai.api_key_changed.connect(self.api_key_changed.emit)
         self._general.check_updates_requested.connect(self.check_updates_requested.emit)
+        self._security.auth_changed.connect(self.auth_changed.emit)
         self._security.wipe_requested.connect(self._on_wipe)
 
     def set_update_status(self, text: str) -> None:

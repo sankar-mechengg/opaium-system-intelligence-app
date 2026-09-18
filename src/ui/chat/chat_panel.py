@@ -16,7 +16,8 @@ import json
 from pathlib import Path
 
 from loguru import logger
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QCoreApplication, QEvent, QObject, Qt, QTimer, Signal
+from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from src.ai.ai_engine import AIEngine
@@ -141,10 +142,14 @@ class ChatPanel(QWidget):
         # Message list
         scroll = QScrollArea()
         scroll.setObjectName("chatScroll")
-        scroll.setWidgetResizable(True)
+        # The container is sized manually (see _relayout_messages): bubbles change
+        # height asynchronously while streaming, and widgetResizable's cached size
+        # hints let messages overlap.
+        scroll.setWidgetResizable(False)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.viewport().installEventFilter(self)
         self._scroll = scroll
 
         self._message_container = QWidget()
@@ -154,6 +159,13 @@ class ChatPanel(QWidget):
         self._message_layout.addStretch()
         scroll.setWidget(self._message_container)
         layout.addWidget(scroll, stretch=1)
+
+        self._in_relayout = False
+        self._pending_scroll = False
+        self._relayout_timer = QTimer(self)
+        self._relayout_timer.setSingleShot(True)
+        self._relayout_timer.setInterval(60)
+        self._relayout_timer.timeout.connect(self._relayout_messages)
 
         self._typing = TypingIndicator()
         layout.addWidget(self._typing)
@@ -274,7 +286,8 @@ class ChatPanel(QWidget):
             self._typing.stop()
             self._streaming_bubble = self._insert_bubble(MessageRole.ASSISTANT, "", streaming=True)
         self._streaming_bubble.append_text(delta)
-        self._scroll_to_bottom()
+        # Follow the stream only while the user is already at the bottom.
+        self._schedule_relayout()
 
     def _on_tool_started(self, name: str, arguments: dict) -> None:  # type: ignore[type-arg]
         # A tool call ends the current streamed paragraph; the answer continues in a new bubble.
@@ -295,7 +308,7 @@ class ChatPanel(QWidget):
         self._save_message("tool", json.dumps({"tool": name, "result": payload}, default=str))
         if payload.get("success") and payload.get("operation_id") is not None:
             self.operation_completed.emit(str(payload.get("message") or f"{pretty_tool_name(name)} completed"))
-        self._scroll_to_bottom()
+        self._schedule_relayout()
 
     def _on_approval_needed(self, request: object) -> None:
         if not isinstance(request, ApprovalRequest):
@@ -329,7 +342,7 @@ class ChatPanel(QWidget):
                 self._save_message("assistant", text)
             if parsed.cancelled:
                 self._add_system_message("Generation stopped.")
-            self._scroll_to_bottom()
+            self._schedule_relayout()
         except Exception as e:
             logger.error(f"Error in _on_ai_response handler: {e}")
 
@@ -477,7 +490,73 @@ class ChatPanel(QWidget):
     def _insert_widget(self, widget: QWidget) -> None:
         count = self._message_layout.count()
         self._message_layout.insertWidget(count - 1, widget)
-        self._scroll_to_bottom()
+        # Any later height change of the entry (markdown re-render, tool card
+        # result, wrapped label) shows up as a LayoutRequest on it.
+        widget.installEventFilter(self)
+        self._pending_scroll = True
+        self._schedule_relayout()
+
+    def _schedule_relayout(self) -> None:
+        if not self._in_relayout:
+            self._relayout_timer.start()
+
+    def _relayout_messages(self) -> None:
+        """
+        Size the message container by hand.
+
+        Bubbles change height asynchronously (markdown documents report their
+        height only once they know their width, tool cards grow when results
+        arrive). Qt propagates those changes one layout level per event-loop
+        pass, so a widgetResizable scroll area keeps stale size hints and lets
+        messages overlap. Here we flush pending layout requests, activate the
+        list layout and pin the container to the resulting height, repeating
+        until the numbers stop moving.
+        """
+        viewport = self._scroll.viewport()
+        vw, vh = viewport.width(), viewport.height()
+        if vw <= 0 or self._in_relayout:
+            return
+        self._in_relayout = True
+        try:
+            bar = self._scroll.verticalScrollBar()
+            was_at_bottom = bar.value() >= bar.maximum() - 12
+            container = self._message_container
+            layout = self._message_layout
+            if container.width() != vw:
+                container.setFixedWidth(vw)
+            for _ in range(6):
+                QCoreApplication.sendPostedEvents(None, QEvent.Type.LayoutRequest.value)
+                layout.invalidate()
+                layout.activate()
+                if layout.hasHeightForWidth():
+                    # minimumSize() would wrap labels at their narrowest width
+                    # and report a far taller column than we actually need.
+                    height = max(layout.heightForWidth(vw), layout.minimumHeightForWidth(vw))
+                else:
+                    height = max(layout.sizeHint().height(), layout.minimumSize().height())
+                height = max(height, vh)
+                if height == container.height():
+                    break
+                container.setFixedHeight(height)
+            if self._pending_scroll or was_at_bottom:
+                self._pending_scroll = False
+                bar.setValue(bar.maximum())
+        finally:
+            self._in_relayout = False
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        etype = event.type()
+        if watched is self._scroll.viewport():
+            if etype == QEvent.Type.Resize:
+                self._schedule_relayout()
+        elif etype == QEvent.Type.LayoutRequest:
+            self._schedule_relayout()
+        return super().eventFilter(watched, event)
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self._pending_scroll = True
+        self._schedule_relayout()
 
     def _insert_bubble(self, role: str, content: str, streaming: bool = False) -> MessageBubble:
         bubble = MessageBubble(ChatMessage(role=role, content=content), streaming=streaming)
@@ -495,9 +574,8 @@ class ChatPanel(QWidget):
         self._insert_widget(ChatContextCard(path))
 
     def _scroll_to_bottom(self) -> None:
-        QTimer.singleShot(
-            40, lambda: self._scroll.verticalScrollBar().setValue(self._scroll.verticalScrollBar().maximum())
-        )
+        self._pending_scroll = True
+        self._schedule_relayout()
 
     def _clear_chat(self) -> None:
         self._streaming_bubble = None
@@ -506,7 +584,10 @@ class ChatPanel(QWidget):
             li = self._message_layout.takeAt(0)
             w = li.widget() if li is not None else None
             if w is not None:
+                w.removeEventFilter(self)
+                w.hide()
                 w.deleteLater()
+        self._schedule_relayout()
 
     def focus_input(self) -> None:
         self._input_bar.focus_input()

@@ -87,6 +87,7 @@ class MainWindow(NativeFramelessMixin, QMainWindow):
 
         self._hotkey = GlobalHotkey(self, self)
         self._hotkey.activated.connect(self.toggle_visibility)
+        self._hotkey_warned_for = ""
 
         mgr = ThemeManager.instance()
         if mgr is not None:
@@ -364,10 +365,16 @@ class MainWindow(NativeFramelessMixin, QMainWindow):
         dialog.settings_saved.connect(self._on_settings_saved)
         dialog.api_key_changed.connect(self._chat.reinitialize_ai)
         dialog.check_updates_requested.connect(self.check_updates_requested.emit)
+        dialog.auth_changed.connect(self._on_auth_changed)
         dialog.wipe_requested.connect(self.wipe_requested.emit)
         self._settings_dialog = dialog
         dialog.exec()
         self._settings_dialog = None
+
+    def _on_auth_changed(self) -> None:
+        """Lock was set up, changed or removed inside Settings (takes effect immediately)."""
+        self._title_bar.set_lock_visible(self._config.is_auth_configured())
+        self.settings_changed.emit()
 
     def report_update_status(self, text: str) -> None:
         dialog = getattr(self, "_settings_dialog", None)
@@ -390,7 +397,13 @@ class MainWindow(NativeFramelessMixin, QMainWindow):
         s = self._config.settings.startup
         if s.global_hotkey_enabled and s.global_hotkey:
             if self._hotkey.sequence != s.global_hotkey or not self._hotkey.is_registered:
-                self._hotkey.register(s.global_hotkey)
+                if not self._hotkey.register(s.global_hotkey) and self._hotkey_warned_for != s.global_hotkey:
+                    # Another program owns that combination; say so (once) instead of failing silently.
+                    self._hotkey_warned_for = s.global_hotkey
+                    self._toasts.warning(
+                        f"Global hotkey {s.global_hotkey} is already in use by another app — "
+                        "choose a different one in Settings → General."
+                    )
         else:
             self._hotkey.unregister()
 

@@ -8,6 +8,7 @@ for common file operations.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -16,6 +17,19 @@ from PySide6.QtWidgets import (
 )
 
 from src.ui.widgets.icon_button import IconButton
+
+
+class _ChipScroll(QScrollArea):
+    """Horizontal strip without a visible scrollbar; the mouse wheel pans it."""
+
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        delta = event.angleDelta().y() or event.angleDelta().x()
+        bar = self.horizontalScrollBar()
+        if bar.maximum() > 0 and delta:
+            bar.setValue(bar.value() - int(delta / 2))
+            event.accept()
+            return
+        super().wheelEvent(event)
 
 
 class QuickActionChips(QWidget):
@@ -52,13 +66,13 @@ class QuickActionChips(QWidget):
         outer_layout.setSpacing(0)
 
         # Scrollable chip area
-        scroll = QScrollArea()
+        scroll = _ChipScroll()
         scroll.setObjectName("chipScroll")
         scroll.setWidgetResizable(True)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setFixedHeight(38)
+        scroll.setFixedHeight(36)
 
         container = QWidget()
         self._chip_layout = QHBoxLayout(container)

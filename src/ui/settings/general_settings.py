@@ -11,7 +11,7 @@ import os
 import subprocess
 
 from loguru import logger
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (
     QFormLayout,
@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QKeySequenceEdit,
     QLabel,
     QPushButton,
+    QSizePolicy,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -52,10 +53,12 @@ class GeneralSettings(QWidget):
 
     def _toggle_row(self, form: QFormLayout, label: str, checked: bool = False) -> ToggleSwitch:
         row = QHBoxLayout()
-        row.addWidget(QLabel(label))
-        row.addStretch()
+        text = QLabel(label)
+        text.setWordWrap(True)
+        text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        row.addWidget(text, stretch=1)
         toggle = ToggleSwitch(checked=checked)
-        row.addWidget(toggle)
+        row.addWidget(toggle, alignment=Qt.AlignmentFlag.AlignVCenter)
         form.addRow(row)
         return toggle
 
@@ -68,6 +71,8 @@ class GeneralSettings(QWidget):
         refresh_group = QGroupBox("Auto-refresh")
         refresh_group.setObjectName("settingsGroup")
         refresh_form = QFormLayout(refresh_group)
+        refresh_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        refresh_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._refresh_toggle = self._toggle_row(refresh_form, "Refresh recent items automatically", True)
         self._refresh_interval = QSpinBox()
         self._refresh_interval.setRange(1, 60)
@@ -80,6 +85,8 @@ class GeneralSettings(QWidget):
         startup_group = QGroupBox("Startup and tray")
         startup_group.setObjectName("settingsGroup")
         startup_form = QFormLayout(startup_group)
+        startup_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        startup_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._startup_toggle = self._toggle_row(startup_form, "Start OP(AI)UM when Windows starts", False)
         self._start_min_toggle = self._toggle_row(startup_form, "Start minimized to the tray", False)
         self._tray_toggle = self._toggle_row(startup_form, "Closing the window keeps OP(AI)UM in the tray", True)
@@ -90,6 +97,8 @@ class GeneralSettings(QWidget):
         hotkey_group = QGroupBox("Global hotkey")
         hotkey_group.setObjectName("settingsGroup")
         hotkey_form = QFormLayout(hotkey_group)
+        hotkey_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        hotkey_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._hotkey_toggle = self._toggle_row(hotkey_form, "Summon OP(AI)UM from anywhere", True)
         hotkey_row = QHBoxLayout()
         self._hotkey_edit = QKeySequenceEdit()
@@ -104,6 +113,8 @@ class GeneralSettings(QWidget):
         hotkey_form.addRow("Shortcut:", hotkey_row)
         self._hotkey_note = QLabel("Use at least one modifier (Ctrl, Alt, Shift or Win).")
         self._hotkey_note.setObjectName("settingsNote")
+
+        self._hotkey_note.setWordWrap(True)
         hotkey_form.addRow(self._hotkey_note)
         layout.addWidget(hotkey_group)
 
@@ -111,10 +122,14 @@ class GeneralSettings(QWidget):
         updates_group = QGroupBox("Updates")
         updates_group.setObjectName("settingsGroup")
         updates_form = QFormLayout(updates_group)
+        updates_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        updates_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._updates_toggle = self._toggle_row(updates_form, "Check GitHub Releases for new versions daily", True)
         updates_row = QHBoxLayout()
         self._update_status = QLabel("")
         self._update_status.setObjectName("settingsNote")
+
+        self._update_status.setWordWrap(True)
         updates_row.addWidget(self._update_status, stretch=1)
         check_btn = QPushButton("Check now")
         check_btn.setObjectName("settingsActionBtn")
@@ -128,6 +143,8 @@ class GeneralSettings(QWidget):
         undo_group = QGroupBox("Undo history")
         undo_group.setObjectName("settingsGroup")
         undo_form = QFormLayout(undo_group)
+        undo_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        undo_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._purge_days = QSpinBox()
         self._purge_days.setRange(1, 90)
         self._purge_days.setSuffix(" days")
@@ -137,6 +154,8 @@ class GeneralSettings(QWidget):
         data_row = QHBoxLayout()
         self._backup_size = QLabel("")
         self._backup_size.setObjectName("settingsNote")
+
+        self._backup_size.setWordWrap(True)
         data_row.addWidget(self._backup_size, stretch=1)
         open_btn = QPushButton("Open data folder")
         open_btn.setMinimumHeight(32)

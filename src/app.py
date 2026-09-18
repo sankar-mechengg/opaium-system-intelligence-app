@@ -116,7 +116,7 @@ class OpAIUMApp(QObject):
         self._main_window.lock_requested.connect(self.lock)
         self._main_window.quit_requested.connect(self.quit)
         self._main_window.settings_changed.connect(self._apply_settings)
-        self._main_window.check_updates_requested.connect(lambda: self._updates.check(force=True))
+        self._main_window.check_updates_requested.connect(self._manual_update_check)
         self._main_window.wipe_requested.connect(self.wipe_and_exit)
 
         if self._start_minimized or self._config.settings.startup.start_minimized:
@@ -154,7 +154,10 @@ class OpAIUMApp(QObject):
         self._tray_icon = QSystemTrayIcon(icon, self._qt_app)
         self._tray_icon.setToolTip(f"{AppConstants.APP_NAME} v{AppConstants.APP_VERSION} — System Intelligence")
 
-        menu = QMenu()
+        # Keep a reference: QSystemTrayIcon does not take ownership of the menu and a
+        # garbage-collected QMenu crashes Qt on the next right-click.
+        self._tray_menu = QMenu()
+        menu = self._tray_menu
         menu.setObjectName("contextMenu")
 
         show_action = QAction("Show OP(AI)UM", menu)
@@ -287,9 +290,17 @@ class OpAIUMApp(QObject):
             self._main_window.show_update_available(version, url, notes)
             self._main_window.notifier.notify(f"OP(AI)UM {version} is available.", title="Update available")
 
+    def _manual_update_check(self) -> None:
+        self._manual_check = True
+        self._updates.check(force=True)
+
     def _on_update_check_finished(self, ok: bool, message: str) -> None:
-        if self._main_window is not None:
-            self._main_window.report_update_status(message)
+        manual = getattr(self, "_manual_check", False)
+        self._manual_check = False
+        if self._main_window is not None and (manual or not ok):
+            # Automatic checks stay quiet unless something is wrong.
+            self._main_window.report_update_status(message if manual else "")
+        logger.info(f"Update check: {message}")
 
     # === Reset & quit ===
 

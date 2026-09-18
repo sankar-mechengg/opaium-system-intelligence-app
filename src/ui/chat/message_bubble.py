@@ -17,6 +17,7 @@ from PySide6.QtGui import (
     QColor,
     QContextMenuEvent,
     QFont,
+    QFontMetrics,
     QPainter,
     QPaintEvent,
     QPen,
@@ -247,6 +248,12 @@ class MessageBubble(QFrame):
             content_label.setFont(content_font)
             bubble_layout.addWidget(content_label)
             self._content_widget = content_label
+            # Hug the text: a short message should not stretch into a wide bar.
+            fm = QFontMetrics(content_font)
+            natural = max(
+                (fm.horizontalAdvance(line) for line in (self._message.content or "").splitlines()), default=0
+            )
+            bubble.setMaximumWidth(max(bubble.minimumWidth(), min(bubble.maximumWidth(), int(natural * 1.12) + 44)))
 
         time_label = QLabel(self._message.timestamp.strftime("%H:%M"))
         time_label.setObjectName(f"bubbleTime_{self._message.role}")
@@ -263,7 +270,9 @@ class MessageBubble(QFrame):
             avatar = RoundAvatar(MessageRole.USER, self)
             outer_layout.addWidget(avatar, alignment=Qt.AlignmentFlag.AlignTop)
         elif is_assistant:
-            outer_layout.addStretch(1)
+            # Answers get a wide column (markdown tables / code need room);
+            # the trailing spacer only takes what is left past the max width.
+            outer_layout.addStretch(0)
 
     # === Streaming ===
 

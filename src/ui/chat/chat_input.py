@@ -57,6 +57,8 @@ class ChatInputBar(QWidget):
         self._text_input.setMaximumHeight(self.MAX_HEIGHT)
         self._text_input.setAcceptRichText(False)
         self._text_input.setTabChangesFocus(True)
+        self._text_input.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._text_input.setFixedHeight(self.MIN_HEIGHT)
         layout.addWidget(self._text_input, stretch=1)
 
         self._send_btn = IconButton("send", "Send", role="accent_text", icon_size=16, object_name="sendButton")

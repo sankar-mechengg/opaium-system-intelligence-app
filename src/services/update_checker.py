@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import json
 import re
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
 from typing import Any
@@ -79,8 +80,14 @@ class UpdateChecker(QObject):
                 "User-Agent": f"OPAIUM/{AppConstants.APP_VERSION}",
             },
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 - fixed https URL
-            data = json.loads(resp.read().decode("utf-8"))
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 - fixed https URL
+                data = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                # No published release yet (or the repository is private): nothing to offer.
+                return {"tag": "", "url": AppConstants.RELEASES_URL, "notes": "", "prerelease": False, "none": True}
+            raise
         return {
             "tag": str(data.get("tag_name", "")),
             "url": str(data.get("html_url", AppConstants.RELEASES_URL)),
@@ -93,6 +100,10 @@ class UpdateChecker(QObject):
         self._config.settings.updates.last_check_iso = datetime.now().isoformat()
         with contextlib.suppress(Exception):
             self._config.save()
+
+        if info.get("none"):
+            self.check_finished.emit(True, "No published releases found yet.")
+            return
 
         tag = str(info.get("tag", ""))
         latest = parse_version(tag)
@@ -110,7 +121,12 @@ class UpdateChecker(QObject):
 
     def _on_error(self, message: str) -> None:
         logger.debug(f"Update check failed: {message}")
-        self.check_finished.emit(False, f"Update check failed: {message}")
+        low = message.lower()
+        if "name resolution" in low or "connection" in low or "timed out" in low or "urlopen" in low:
+            friendly = "Update check skipped — no internet connection."
+        else:
+            friendly = f"Update check failed: {message}"
+        self.check_finished.emit(False, friendly)
 
     def _on_done(self) -> None:
         self._busy = False

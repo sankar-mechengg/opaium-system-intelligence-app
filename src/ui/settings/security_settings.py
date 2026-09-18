@@ -71,6 +71,7 @@ class SecuritySettings(QWidget):
 
         self._status_label = QLabel("")
         self._status_label.setObjectName("settingsStatus")
+
         self._status_label.setWordWrap(True)
         form.addRow(self._status_label)
 
@@ -107,6 +108,8 @@ class SecuritySettings(QWidget):
 
         self._error_label = QLabel("")
         self._error_label.setObjectName("settingsError")
+
+        self._error_label.setWordWrap(True)
         self._error_label.setVisible(False)
         form.addRow(self._error_label)
 
@@ -131,14 +134,15 @@ class SecuritySettings(QWidget):
         auto_group = QGroupBox("Automatic locking")
         auto_group.setObjectName("settingsGroup")
         auto_form = QFormLayout(auto_group)
+        auto_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        auto_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._idle_combo = QComboBox()
         for label, minutes in IDLE_OPTIONS:
             self._idle_combo.addItem(label, minutes)
         self._idle_combo.setMinimumHeight(32)
         auto_form.addRow("Lock after inactivity:", self._idle_combo)
         tray_row = QHBoxLayout()
-        tray_row.addWidget(QLabel("Lock when hidden to the tray"))
-        tray_row.addStretch()
+        tray_row.addWidget(QLabel("Lock when hidden to the tray"), stretch=1)
         self._lock_tray_toggle = ToggleSwitch(checked=False)
         tray_row.addWidget(self._lock_tray_toggle)
         auto_form.addRow(tray_row)
@@ -146,6 +150,7 @@ class SecuritySettings(QWidget):
             "Automatic locking only applies while a PIN or password is set. Ctrl+L locks immediately."
         )
         self._auto_note.setObjectName("settingsNote")
+
         self._auto_note.setWordWrap(True)
         auto_form.addRow(self._auto_note)
         layout.addWidget(auto_group)
@@ -159,6 +164,7 @@ class SecuritySettings(QWidget):
             "removes the lock. Your files are never touched."
         )
         danger_text.setObjectName("settingsNote")
+
         danger_text.setWordWrap(True)
         danger_layout.addWidget(danger_text)
         wipe_btn = QPushButton("Delete all OP(AI)UM data…")
