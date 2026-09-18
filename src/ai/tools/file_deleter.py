@@ -121,7 +121,7 @@ class FileDeleterTool(BaseTool):
             operation_type="delete",
             description=f"Deleted {succeeded} files to Recycle Bin",
             source_paths=deleted_paths,
-            is_undoable=False,  # Recycle Bin recovery is manual
+            is_undoable=True,  # Restored from the Recycle Bin via Shell COM
             metadata={"method": "recycle_bin"},
         )
 

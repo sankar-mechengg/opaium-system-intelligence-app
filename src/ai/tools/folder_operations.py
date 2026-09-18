@@ -221,7 +221,7 @@ class FolderOperationsTool(BaseTool):
                 operation_type="delete_folder",
                 description=f"Deleted folder to Recycle Bin: {path.name}",
                 source_paths=[str(path)],
-                is_undoable=False,  # Recovery via Recycle Bin
+                is_undoable=True,  # Restored from the Recycle Bin via Shell COM
                 metadata={"method": "recycle_bin", "was_empty": is_empty},
             )
 
@@ -300,7 +300,7 @@ class FolderOperationsTool(BaseTool):
                 description=f"Copied folder: {source.name} to {dest_path.parent.name}",
                 source_paths=[str(source)],
                 dest_paths=[str(dest_path)],
-                is_undoable=False,
+                is_undoable=True,  # Undo sends the copy to the Recycle Bin
             )
 
             return ToolResult(

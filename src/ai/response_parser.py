@@ -42,7 +42,9 @@ class ParsedResponse:
         is_error: bool = False,
         error_message: str = "",
         raw_response: dict[str, Any] | None = None,
+        cancelled: bool = False,
     ) -> None:
+        self.cancelled = cancelled
         self.text = text
         self.tool_calls = tool_calls or []
         self.needs_approval = needs_approval
@@ -107,6 +109,7 @@ class ResponseParser:
                 needs_approval=needs_approval,
                 approval_plan=plan,
                 raw_response=response,
+                cancelled=bool(response.get("cancelled")),
             )
 
         except Exception as e:
@@ -122,15 +125,22 @@ class ResponseParser:
         """Create an error ParsedResponse from an exception."""
         error_msg = str(error)
 
+        low = error_msg.lower()
         # Friendly error messages
-        if "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+        if "api_key" in low or "authentication" in low or "invalid_api_key" in low or "401" in low:
             friendly = "API key is invalid or expired. Please update it in Settings."
-        elif "rate_limit" in error_msg.lower():
+        elif "rate_limit" in low or "429" in low:
             friendly = "Rate limit reached. Please wait a moment and try again."
-        elif "timeout" in error_msg.lower():
-            friendly = "Request timed out. The operation may be too complex."
-        elif "model" in error_msg.lower() and "not found" in error_msg.lower():
-            friendly = "The configured AI model is not available. Check Settings."
+        elif "insufficient_quota" in low or "billing" in low:
+            friendly = "Your API account has no remaining quota. Check your provider billing."
+        elif "context_length" in low or "maximum context" in low:
+            friendly = "The conversation is too long for the model. Start a new chat."
+        elif "timeout" in low or "timed out" in low:
+            friendly = "Request timed out. Check your connection or try a simpler request."
+        elif "connection" in low or "connect" in low or "name resolution" in low:
+            friendly = "Could not reach the AI endpoint. Check your internet connection or base URL."
+        elif "model" in low and ("not found" in low or "does not exist" in low or "404" in low):
+            friendly = "The configured AI model is not available on this endpoint. Check Settings."
         else:
             friendly = f"AI error: {error_msg}"
 

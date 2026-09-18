@@ -27,6 +27,7 @@ class ToolDefinition:
         handler: Callable[..., Any],
         is_destructive: bool = False,
         requires_confirmation: bool = False,
+        instance: BaseTool | None = None,
     ) -> None:
         self.name = name
         self.description = description
@@ -34,6 +35,7 @@ class ToolDefinition:
         self.handler = handler
         self.is_destructive = is_destructive
         self.requires_confirmation = requires_confirmation
+        self.instance = instance
 
     def to_openai_schema(self) -> dict[str, Any]:
         """Convert to OpenAI function calling format."""
@@ -66,6 +68,7 @@ class FunctionRegistry:
         parameters: dict[str, Any],
         handler: Callable[..., Any],
         is_destructive: bool = False,
+        instance: BaseTool | None = None,
     ) -> None:
         """Register a tool function."""
         self._tools[name] = ToolDefinition(
@@ -75,6 +78,7 @@ class FunctionRegistry:
             handler=handler,
             is_destructive=is_destructive,
             requires_confirmation=is_destructive,
+            instance=instance,
         )
         logger.debug(f"Registered tool: {name} (destructive={is_destructive})")
 
@@ -105,7 +109,14 @@ class FunctionRegistry:
             raise ValueError(f"Unknown tool: {name}")
 
         logger.info(f"Executing tool: {name}")
-        return tool.handler(**arguments)
+        try:
+            return tool.handler(**arguments)
+        except TypeError as e:
+            # The model passed an argument the tool does not accept — surface it instead of crashing.
+            logger.warning(f"Tool {name} rejected arguments {list(arguments)}: {e}")
+            from src.ai.tools.base_tool import ToolResult
+
+            return ToolResult(success=False, message=f"Invalid arguments for {name}: {e}")
 
     def is_destructive(self, name: str) -> bool:
         """Check if a tool is destructive (requires confirmation)."""
@@ -182,6 +193,7 @@ class FunctionRegistry:
                 parameters=tool.parameters,
                 handler=tool.execute,
                 is_destructive=tool.is_destructive,
+                instance=tool,
             )
 
         logger.info(f"Registered {self.tool_count} AI tools.")

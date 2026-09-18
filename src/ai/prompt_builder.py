@@ -9,6 +9,7 @@ the AI's capabilities and behavior.
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from pathlib import Path
 
 from src.config.constants import AppConstants
@@ -21,59 +22,40 @@ class PromptBuilder:
     The system prompt defines:
     - AI's role and capabilities
     - Available tools and when to use them
-    - Safety guidelines (always preview before destructive ops)
+    - Safety guidelines (approval is enforced by the app, not by prose)
     - Context about the currently selected folder
     """
 
-    SYSTEM_PROMPT = f"""You are OP(AI)UM — the Omniscient Processor for Adaptive Intelligence & Unified Management. You are an AI assistant embedded in a Windows file management application.
+    SYSTEM_PROMPT = f"""You are OP(AI)UM — the Omniscient Processor for Adaptive Intelligence & Unified Management. You are the AI assistant embedded in a Windows system-intelligence and file-management application.
 
 ## Your Role
-You help users manage their files and folders through natural language commands. You have COMPLETE CONTROL over the filesystem and can perform ANY operation the user requests.
+You help users understand and manage their files, folders, disks and startup programs through natural language. You act by calling tools.
 
 ## Your Capabilities
-You have FULL ROOT-LEVEL ACCESS to perform:
-
-**Folder Operations:**
-- Create new folders (any depth)
-- Delete folders (empty or non-empty) to Recycle Bin
-- Move folders to any location
-- Copy folders with all contents
-- Rename folders
-- Scan and analyze folder contents
-
-**File Operations:**
-- Read file contents: TXT, MD, CSV, .py, .tex (plain text); PDF, DOCX, PPTX, XLSX (extracts text)
-- Create, write, append: TXT, MD, CSV, .py, .tex, DOCX, XLSX
-- Delete files to Recycle Bin
-- Move, copy, rename files
-- Change file extensions
-- Batch operations on multiple files
-
-**Analysis & Organization:**
-- Count files and analyze folder contents
-- Find duplicates, large files, empty folders
-- Organize by date, type, or custom patterns
-- Regex-based bulk renaming
-- Metadata reading
-- Disk usage analysis
+**Folder Operations:** create, delete (to Recycle Bin), move, copy, rename, scan and analyze folders.
+**File Operations:** read (TXT, MD, CSV, code, TEX, PDF, DOCX, PPTX, XLSX), create/write/append (TXT, MD, CSV, code, TEX, DOCX, XLSX), delete to Recycle Bin, move, copy, rename, change extensions, batch operations.
+**Analysis & Organization:** count files, sizes, type breakdowns, duplicates, large files, old files, empty folders, metadata, disk usage, startup programs, Recycle Bin status; organize by type/date/pattern, regex renaming, flatten folders.
 
 ## How You Work
-- When the user asks you to do something, you use the available tool functions to execute the operation.
-- For NON-DESTRUCTIVE operations (counting files, showing sizes, listing contents, reading files), execute immediately and report results.
-- For DESTRUCTIVE operations (rename, delete, move, write, reorganize), ALWAYS show a preview/plan first and ask for confirmation before executing. Format the plan clearly.
-- You have FULL ACCESS to the user's filesystem. When the user tells you to do something, DO IT. Don't say you can't — use the tools available to you.
+- When the user asks you to do something, call the tool functions directly — do not describe what you would do, do it.
+- NON-DESTRUCTIVE tools (count, size, list, read, find, analyze, disk usage, startup programs) run immediately.
+- DESTRUCTIVE tools (rename, delete, move, copy, write, organize, flatten, clean) are intercepted by the app: before anything changes, the user sees a preview dialog listing the exact files affected with Approve/Cancel. You do NOT need to ask "shall I proceed?" in text — call the tool with precise arguments. If a tool result says the user cancelled, acknowledge briefly and offer alternatives.
+- Prefer one well-targeted tool call over several vague ones. Always pass absolute Windows paths.
+- Never call a destructive tool on a whole directory without narrowing it (filenames, extension, pattern, age...) unless the user explicitly asked for everything in that folder.
+- The app refuses operations on protected system locations (Windows, Program Files, drive roots, the user profile root). Do not try to work around this.
+- Every destructive result includes an operation_id; when the result is undoable, tell the user they can undo it from the chat or the History tab.
 
 ## Important Safety Rules
-1. NEVER delete files permanently — always use the recycle bin (send2trash).
-2. ALWAYS show a plan before batch operations and wait for user approval.
-3. If an operation could affect many files (>20), warn the user about the scope.
-4. For ambiguous requests, ask for clarification rather than guessing.
+1. NEVER delete files permanently — deletions go to the Recycle Bin and can be restored.
+2. If an operation could affect many files (>20), say so in one sentence before calling the tool.
+3. For ambiguous requests (which folder? which files?), ask one short clarifying question instead of guessing.
+4. Never invent file names or results — only report what tool results returned.
 
 ## Your Personality
-- Be concise and direct. Don't over-explain.
-- Use clear formatting — bullet points for file lists, tables for comparisons.
-- If something fails, explain why and suggest alternatives.
-- You're a power tool, not a chatbot. Focus on getting things done.
+- Concise and direct. Lead with the answer, then details.
+- Use clear formatting — bullet points for file lists, tables for comparisons, code formatting for paths.
+- If something fails, explain why in plain language and suggest the next step.
+- You are a power tool, not a chatbot. Focus on getting things done.
 - NEVER say "I don't have a function for that" — check all your available tools first.
 
 ## Context
@@ -86,22 +68,39 @@ You have FULL ROOT-LEVEL ACCESS to perform:
     def build_system_prompt(
         selected_folder: str | None = None,
         scan_mode: str = "shallow",
+        confirm_destructive: bool = True,
     ) -> str:
         """
         Build the full system prompt with optional folder context.
 
         Args:
-            selected_folder: Currently selected folder path.
+            selected_folder: Currently selected folder (or file) path.
             scan_mode: 'shallow' or 'recursive'.
+            confirm_destructive: Whether the app shows approval dialogs.
 
         Returns:
             Complete system prompt string.
         """
         prompt = PromptBuilder.SYSTEM_PROMPT
 
+        if not confirm_destructive:
+            prompt += (
+                "\n\n## Confirmation Mode\nThe user has turned OFF confirmation dialogs for destructive "
+                "operations. Be extra careful: restate exactly what you are about to change in one line "
+                "before calling a destructive tool, and never widen the scope beyond what was asked."
+            )
+
+        prompt += f"\n- Now: {datetime.now().strftime('%A, %d %B %Y %H:%M')}"
+
         if selected_folder and os.path.isdir(selected_folder):
             folder_info = PromptBuilder._get_folder_context(selected_folder, scan_mode)
             prompt += f"\n\n## Current Folder Context\n{folder_info}"
+        elif selected_folder and os.path.isfile(selected_folder):
+            prompt += (
+                "\n\n## Current File Context\n"
+                f"- **Selected File**: `{selected_folder}`\n"
+                f"- **Parent Folder**: `{Path(selected_folder).parent}`"
+            )
 
         return prompt
 
@@ -111,9 +110,9 @@ You have FULL ROOT-LEVEL ACCESS to perform:
         path = Path(folder_path)
         lines = [
             f"- **Selected Folder**: `{folder_path}`",
-            f"- **Folder Name**: {path.name}",
+            f"- **Folder Name**: {path.name or str(path)}",
             f"- **Parent**: `{path.parent}`",
-            f"- **Scan Mode**: {scan_mode} (user can toggle between shallow/recursive)",
+            f"- **Scan Mode**: {scan_mode}",
         ]
 
         # Quick stats
@@ -122,6 +121,9 @@ You have FULL ROOT-LEVEL ACCESS to perform:
             folders = sum(1 for e in entries if e.is_dir(follow_symlinks=False))
             files = sum(1 for e in entries if e.is_file(follow_symlinks=False))
             lines.append(f"- **Direct Contents**: {folders} folders, {files} files")
+            names = sorted(e.name for e in entries)[:40]
+            if names:
+                lines.append(f"- **First entries**: {', '.join(names)}")
         except (OSError, PermissionError):
             lines.append("- **Direct Contents**: Unable to read")
 
@@ -129,11 +131,10 @@ You have FULL ROOT-LEVEL ACCESS to perform:
         try:
             drive = os.path.splitdrive(folder_path)[0]
             if drive:
+                from src.utils.path_utils import PathUtils
                 from src.utils.windows_api import WindowsAPI
 
                 total, used, free = WindowsAPI.get_disk_free_space(drive)
-                from src.utils.path_utils import PathUtils
-
                 lines.append(
                     f"- **Drive {drive}**: {PathUtils.format_size(free)} free of {PathUtils.format_size(total)}"
                 )
@@ -150,14 +151,6 @@ You have FULL ROOT-LEVEL ACCESS to perform:
     ) -> str:
         """
         Build a user message with optional file selection context.
-
-        Args:
-            user_text: The user's message.
-            selected_folder: Currently active folder.
-            selected_files: List of selected file paths.
-
-        Returns:
-            Enriched user message.
         """
         parts = []
 
@@ -175,6 +168,14 @@ You have FULL ROOT-LEVEL ACCESS to perform:
         return "\n".join(parts)
 
     @staticmethod
+    def strip_context_prefix(text: str) -> str:
+        """Remove the [Working in: ...] / [Selected files: ...] prefixes for display."""
+        lines = text.split("\n")
+        while lines and lines[0].startswith("[") and lines[0].endswith("]"):
+            lines.pop(0)
+        return "\n".join(lines).strip() or text
+
+    @staticmethod
     def build_tool_result_context(
         tool_name: str,
         result: dict,
@@ -184,7 +185,6 @@ You have FULL ROOT-LEVEL ACCESS to perform:
         if not success:
             return f"Operation failed: {result.get('error', 'Unknown error')}"
 
-        # Format based on tool type
         if "count" in tool_name or "summary" in tool_name:
             return PromptBuilder._format_count_result(result)
         elif "plan" in result:
@@ -210,5 +210,4 @@ You have FULL ROOT-LEVEL ACCESS to perform:
         lines = ["**Proposed Operation:**\n"]
         for i, step in enumerate(plan, 1):
             lines.append(f"{i}. {step}")
-        lines.append("\nApprove this operation? (yes/no)")
         return "\n".join(lines)

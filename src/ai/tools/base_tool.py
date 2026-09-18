@@ -37,6 +37,7 @@ class ToolResult:
         operation: OperationRecord | None = None,
         requires_approval: bool = False,
         preview: list[str] | None = None,
+        operation_id: int | None = None,
     ) -> None:
         self.success = success
         self.message = message
@@ -44,6 +45,7 @@ class ToolResult:
         self.operation = operation
         self.requires_approval = requires_approval
         self.preview = preview or []
+        self.operation_id = operation_id
 
     def __repr__(self) -> str:
         status = "OK" if self.success else "FAIL"
@@ -51,11 +53,15 @@ class ToolResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
+        payload: dict[str, Any] = {
             "success": self.success,
             "message": self.message,
             "data": self.data,
         }
+        if self.operation_id is not None:
+            payload["operation_id"] = self.operation_id
+            payload["undoable"] = bool(self.operation and self.operation.is_undoable)
+        return payload
 
 
 class BaseTool(ABC):

@@ -15,6 +15,7 @@ from loguru import logger
 
 from src.ai.tools.base_tool import BaseTool, ToolResult
 from src.core.models import OperationRecord
+from src.undo.backup_store import BackupStore
 
 
 class FileContentTool(BaseTool):
@@ -235,6 +236,7 @@ class FileContentTool(BaseTool):
     def _write_file(self, path: Path, content: str, encoding: str) -> ToolResult:
         """Write content to file (overwrites existing). Supports TXT, MD, CSV, .py, .tex, DOCX, XLSX."""
         existed = path.exists()
+        backup_path: str | None = None
 
         try:
             from src.utils.file_readers import can_write_format, write_file_content
@@ -244,6 +246,9 @@ class FileContentTool(BaseTool):
                     success=False,
                     message=f"Format not supported for writing: {path.suffix}. Supported: TXT, MD, CSV, .py, .tex, DOCX, XLSX",
                 )
+
+            if existed:
+                backup_path = BackupStore().backup(path)
 
             if not write_file_content(path, content, encoding=encoding):
                 return ToolResult(
@@ -257,11 +262,11 @@ class FileContentTool(BaseTool):
 
             operation = OperationRecord(
                 timestamp=datetime.now(),
-                operation_type="write_file",
-                description=f"Wrote to file: {path.name}",
+                operation_type="write_file" if existed else "create_file",
+                description=f"{'Overwrote' if existed else 'Created'} file: {path.name}",
                 dest_paths=[str(path)],
-                is_undoable=False,
-                metadata={"action": action, "size": len(content)},
+                is_undoable=(not existed) or backup_path is not None,
+                metadata={"action": action, "size": len(content), "backup_path": backup_path},
             )
 
             return ToolResult(
@@ -278,6 +283,8 @@ class FileContentTool(BaseTool):
             return ToolResult(success=False, message=f"File not found: {path}")
 
         try:
+            prev_size = path.stat().st_size
+            backup_path = BackupStore().backup(path)
             with open(path, "a", encoding=encoding) as f:
                 f.write(content)
 
@@ -288,8 +295,8 @@ class FileContentTool(BaseTool):
                 operation_type="append_file",
                 description=f"Appended to file: {path.name}",
                 dest_paths=[str(path)],
-                is_undoable=False,
-                metadata={"size_added": len(content)},
+                is_undoable=True,
+                metadata={"size_added": len(content), "prev_size": prev_size, "backup_path": backup_path},
             )
 
             return ToolResult(

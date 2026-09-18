@@ -108,7 +108,7 @@ class EmptyFolderCleanerTool(BaseTool):
             operation_type="clean_empty",
             description=f"Removed {removed} empty folders from {Path(path).name}",
             source_paths=removed_paths,
-            is_undoable=False,
+            is_undoable=True,  # Undo recreates the (empty) folders
         )
 
         message = f"Removed {removed} empty folder(s)."

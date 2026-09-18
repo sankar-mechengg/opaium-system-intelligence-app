@@ -148,18 +148,17 @@ class SpeechRecorder(QObject):
         self.recording_started.emit()
 
     def stop(self) -> None:
-        """Stop recording."""
+        """Stop recording (non-blocking: the worker finishes and emits on its own)."""
         if not self._is_recording or self._worker is None:
             return
 
         self._worker.stop_recording()
-        self._worker.wait(5000)  # Wait up to 5s
-
         self._is_recording = False
         self.recording_stopped.emit()
 
     def _on_recording_finished(self, wav_path: str) -> None:
         """Handle completed recording."""
+        self.cleanup()  # remove the previous take before remembering the new one
         self._last_wav_path = wav_path
         logger.info(f"Recording ready for transcription: {wav_path}")
         # Transcription will be triggered by the AI engine
