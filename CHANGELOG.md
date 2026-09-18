@@ -58,6 +58,21 @@ a native Windows 11 window and a token-based design system.
 - Explorer cards use elided names and shared icon caches.
 
 ### Fixed
+- **Startup crash / empty Explorer and Dashboard** — results from background workers were connected to
+  lambdas, which PySide6 does not deliver across threads (and which could crash inside `Qt6Core`).
+  Worker signals now go to bound slots, worker signal objects are kept alive on the UI thread until
+  their `finished` is processed, and every load is token-guarded against stale results.
+- Explorer Home loads in two passes (instant listing, then shell-resolved moved shortcuts); `.lnk`
+  resolution no longer depends on a pywin32 constant that does not exist and caches per file.
+- Dashboard snapshot no longer waits on a full user-folder size scan; folder sizes are computed
+  separately with a file / time budget.
+- Settings pages scroll instead of squeezing rows into each other; long descriptions wrap.
+- Chat messages no longer overlap while streaming; the input box starts single-line and grows with
+  the text; answers get a wide column while short messages hug their text.
+- Update check reports *No published releases found yet* instead of `HTTP Error 404`; automatic checks
+  stay quiet in the status bar and offline errors read like plain English.
+- Global hotkey conflicts are reported with a toast instead of failing silently.
+- Microphone level meter signal is connected signal-to-signal (safe from the audio thread).
 - Auto-refresh timer called a method that did not exist, so it never refreshed.
 - Explorer never refreshed after AI operations and success toasts never fired.
 - Double-clicking a card opened the item twice; context-menu *Delete* did nothing; clicking a tree folder did nothing.
