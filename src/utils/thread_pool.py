@@ -3,6 +3,14 @@ OP(AI)UM — Thread Pool Workers
 
 Qt-based worker classes for running long operations
 (file scanning, API calls, etc.) off the main UI thread.
+
+Rules that keep this crash-free with PySide6:
+- Connect worker signals to *bound methods* of main-thread QObjects. Lambdas
+  or partials that capture a QObject are not delivered reliably across
+  threads and can crash Qt when the sender is destroyed.
+- The signal-carrier object of every worker lives on the main thread and is
+  kept alive by ThreadPoolManager until `finished` has been processed there,
+  so queued `result` deliveries never target a freed object.
 """
 
 from __future__ import annotations
@@ -31,14 +39,40 @@ class WorkerSignals(QObject):
     progress = Signal(int, int)  # current, total
 
 
+class _WorkerKeeper(QObject):
+    """Main-thread owner of every in-flight worker (and its signal carrier)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._live: dict[int, QRunnable] = {}
+
+    def hold(self, worker: QRunnable) -> None:
+        signals: WorkerSignals = worker.signals  # type: ignore[attr-defined]
+        signals.setParent(self)
+        self._live[id(signals)] = worker
+        signals.finished.connect(self._on_finished)
+
+    def _on_finished(self) -> None:
+        signals = self.sender()
+        if signals is None:
+            return
+        # `finished` is queued after `result`/`error`, so those were delivered already.
+        self._live.pop(id(signals), None)
+        signals.deleteLater()
+
+    @property
+    def active(self) -> int:
+        return len(self._live)
+
+
 class Worker(QRunnable):
     """
     Generic background worker that runs a callable in the thread pool.
 
     Usage:
         worker = Worker(my_function, arg1, arg2, kwarg1=value)
-        worker.signals.result.connect(handle_result)
-        worker.signals.error.connect(handle_error)
+        worker.signals.result.connect(self.handle_result)   # bound method!
+        worker.signals.error.connect(self.handle_error)
         ThreadPoolManager.run(worker)
     """
 
@@ -75,17 +109,6 @@ class ProgressWorker(QRunnable):
 
     The callable receives a `progress_callback(current, total)` as
     its first argument.
-
-    Usage:
-        def scan_files(progress_callback, folder_path):
-            for i, f in enumerate(files):
-                progress_callback(i, len(files))
-                process(f)
-            return results
-
-        worker = ProgressWorker(scan_files, "/path/to/folder")
-        worker.signals.progress.connect(update_progress_bar)
-        ThreadPoolManager.run(worker)
     """
 
     def __init__(
@@ -126,19 +149,28 @@ class ThreadPoolManager:
     """
 
     _pool: QThreadPool | None = None
+    _keeper: _WorkerKeeper | None = None
 
     @classmethod
     def pool(cls) -> QThreadPool:
         """Get the global thread pool."""
         if cls._pool is None:
             cls._pool = QThreadPool.globalInstance()
-            cls._pool.setMaxThreadCount(8)
+            cls._pool.setMaxThreadCount(max(4, min(8, cls._pool.maxThreadCount())))
             logger.debug(f"Thread pool initialized. Max threads: {cls._pool.maxThreadCount()}")
         return cls._pool
 
     @classmethod
+    def keeper(cls) -> _WorkerKeeper:
+        if cls._keeper is None:
+            cls._keeper = _WorkerKeeper()
+        return cls._keeper
+
+    @classmethod
     def run(cls, worker: QRunnable) -> None:
-        """Submit a worker to the thread pool."""
+        """Submit a worker to the thread pool (call from the main thread)."""
+        if hasattr(worker, "signals"):
+            cls.keeper().hold(worker)
         cls.pool().start(worker)
 
     @classmethod

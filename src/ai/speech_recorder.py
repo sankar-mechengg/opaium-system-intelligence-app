@@ -141,7 +141,9 @@ class SpeechRecorder(QObject):
         self._worker = AudioRecorderWorker(self)
         self._worker.recording_finished.connect(self._on_recording_finished)
         self._worker.recording_error.connect(self._on_error)
-        self._worker.level_update.connect(self.audio_level.emit)
+        # Signal-to-signal: level_update fires on the audio thread, so a
+        # plain Python callable receiver would not be delivered safely.
+        self._worker.level_update.connect(self.audio_level)
         self._worker.start()
 
         self._is_recording = True

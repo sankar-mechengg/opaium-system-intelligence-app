@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSizePolicy,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -58,10 +59,12 @@ class AISettings(QWidget):
 
     def _toggle_row(self, form: QFormLayout, label: str, checked: bool = False) -> ToggleSwitch:
         row = QHBoxLayout()
-        row.addWidget(QLabel(label))
-        row.addStretch()
+        text = QLabel(label)
+        text.setWordWrap(True)
+        text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        row.addWidget(text, stretch=1)
         toggle = ToggleSwitch(checked=checked)
-        row.addWidget(toggle)
+        row.addWidget(toggle, alignment=Qt.AlignmentFlag.AlignVCenter)
         form.addRow(row)
         return toggle
 
@@ -74,6 +77,8 @@ class AISettings(QWidget):
         api_group = QGroupBox("Provider")
         api_group.setObjectName("settingsGroup")
         api_form = QFormLayout(api_group)
+        api_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        api_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         self._preset_combo = QComboBox()
         for label, _url, _model in ENDPOINT_PRESETS:
@@ -103,12 +108,14 @@ class AISettings(QWidget):
             "Your key is encrypted with a machine-bound key and never leaves this PC except to call the provider."
         )
         note.setObjectName("settingsNote")
+
         note.setWordWrap(True)
         api_form.addRow(note)
 
         test_row = QHBoxLayout()
         self._key_status = QLabel("")
         self._key_status.setObjectName("settingsStatus")
+
         self._key_status.setWordWrap(True)
         test_row.addWidget(self._key_status, stretch=1)
         self._test_btn = QPushButton("Save && test connection")
@@ -124,6 +131,8 @@ class AISettings(QWidget):
         model_group = QGroupBox("Model")
         model_group.setObjectName("settingsGroup")
         model_form = QFormLayout(model_group)
+        model_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        model_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         model_row = QHBoxLayout()
         self._model_combo = QComboBox()
@@ -159,6 +168,8 @@ class AISettings(QWidget):
         behaviour_group = QGroupBox("Behaviour")
         behaviour_group.setObjectName("settingsGroup")
         behaviour_form = QFormLayout(behaviour_group)
+        behaviour_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        behaviour_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._streaming_toggle = self._toggle_row(behaviour_form, "Stream answers as they are generated", True)
         self._confirm_toggle = self._toggle_row(behaviour_form, "Ask before destructive operations (recommended)", True)
         self._voice_send_toggle = self._toggle_row(
@@ -168,6 +179,7 @@ class AISettings(QWidget):
             "Turning confirmation off lets the AI rename, move, delete (to Recycle Bin) and write files without a preview."
         )
         warn.setObjectName("settingsNote")
+
         warn.setWordWrap(True)
         behaviour_form.addRow(warn)
         layout.addWidget(behaviour_group)
@@ -258,7 +270,7 @@ class AISettings(QWidget):
         client = OpenAIClient(self._config)
         worker = Worker(client.test_connection)
         worker.signals.result.connect(self._on_test_result)
-        worker.signals.error.connect(lambda err: self._on_test_result((False, str(err))))
+        worker.signals.error.connect(self._on_test_error)
         worker.signals.finished.connect(self._on_test_done)
         ThreadPoolManager.run(worker)
 
@@ -266,6 +278,9 @@ class AISettings(QWidget):
         ok, message = result if isinstance(result, tuple) else (False, str(result))
         self._set_status(message, "ok" if ok else "err")
         logger.info(f"Connection test: {ok} — {message}")
+
+    def _on_test_error(self, error: str) -> None:
+        self._on_test_result((False, str(error)))
 
     def _on_test_done(self) -> None:
         self._testing = False
@@ -281,9 +296,15 @@ class AISettings(QWidget):
         client = OpenAIClient(self._config)
         worker = Worker(client.list_models)
         worker.signals.result.connect(self._on_models)
-        worker.signals.error.connect(lambda err: self._set_status(f"Could not list models: {err}", "err"))
-        worker.signals.finished.connect(lambda: self._fetch_btn.setEnabled(True))
+        worker.signals.error.connect(self._on_models_error)
+        worker.signals.finished.connect(self._on_models_done)
         ThreadPoolManager.run(worker)
+
+    def _on_models_error(self, error: str) -> None:
+        self._set_status(f"Could not list models: {error}", "err")
+
+    def _on_models_done(self) -> None:
+        self._fetch_btn.setEnabled(True)
 
     def _on_models(self, models: object) -> None:
         ids = [m for m in models if isinstance(m, str)] if isinstance(models, list) else []
